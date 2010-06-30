@@ -1,6 +1,6 @@
 // #include <boost/graph/astar_search.hpp>
 #include <boost/graph/grid_graph.hpp>
-#include <vector>
+#include <iostream>
 
 
 // Forward declarations
@@ -85,6 +85,18 @@ namespace grid {
     return get(tag, g)[e];
   }
 
+
+  // Print vertices as (x, y) ordered pairs.
+  std::ostream& operator<<(std::ostream& output, const vertex_descriptor& v) {
+    output << "(" << v[0] << ", " << v[1] << ")";
+    return output;
+  }
+
+  // Print edges as (x1, y1) -> (x2, y2).
+  std::ostream& operator<<(std::ostream& output, const edge_descriptor& e) {
+    output << e.first << " -> " << e.second;
+    return output;
+  }
 }
 
 
