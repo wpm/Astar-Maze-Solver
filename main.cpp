@@ -1,14 +1,16 @@
 #include <iostream>
-#include <boost/graph/astar_search.hpp>
-#include <boost/graph/grid_graph.hpp>
+#include "grid.hpp"
 
-
-#define RANK 2
-typedef boost::grid_graph<RANK> GridGraph;
-typedef GridGraph::vertex_descriptor Vertex;
 
 int main(int argc, char* argv[]) {
-	boost::array<std::size_t, RANK> dimensions = { { 3, 4} };
-	GridGraph graph(dimensions);
-	return 0;
+  using namespace grid;
+  
+  dimension_array dimensions = { {3, 4} };
+  graph g(dimensions);
+
+  edge_descriptor e = edge_at(0, g);
+  edge_weight_map_reference w = get(boost::edge_weight, g, e);
+  std::cout << "Edge weight " << w << std::endl;
+
+  return 0;
 }
