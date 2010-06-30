@@ -30,9 +30,9 @@ int main(int argc, char* argv[]) {
   std::cout << source << " index " << get(vertex_index, g)[source]
             << std::endl;
 
-  astar_search(g,
-               source,
-               euclidean_heuristic(goal),
-               visitor(astar_goal_visitor(goal)) );
+  // astar_search(g,
+  //              source,
+  //              euclidean_heuristic(goal),
+  //              visitor(astar_goal_visitor(goal)) );
   return 0;
 }
