@@ -18,8 +18,9 @@ int main(int argc, char* argv[]) {
   weighted_grid g(dimensions);
 
   // Edge weights are implemented.
+  const_edge_weight_map edge_map = get(edge_weight, g);
   edge_descriptor e = edge_at(0, g);
-  edge_weight_map_reference w = get(edge_weight, g, e);
+  edge_weight_map_reference w = edge_map[e];
   std::cout << e << " weight " << w << std::endl;
 
   vertex_descriptor source = vertex(0, g), goal = vertex(3, g);
