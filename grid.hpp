@@ -1,6 +1,7 @@
-// #include <boost/graph/astar_search.hpp>
+#include <boost/graph/astar_search.hpp>
 #include <boost/graph/grid_graph.hpp>
 #include <iostream>
+#include <math.h>
 
 
 // Forward declarations
@@ -28,6 +29,10 @@ namespace grid {
   typedef boost::array<std::size_t, RANK> dimension_array;
   class graph:public boost::grid_graph<RANK> {
   public:
+    // Types required by a-star
+    typedef vertex_descriptor vertex_property_type;
+    typedef vertices_size_type vertex_index;
+    
     graph(dimension_array& d):boost::grid_graph<RANK>(d) {};
   };
 
@@ -86,6 +91,34 @@ namespace grid {
   }
 
 
+  // Euclidean heuristic for a grid
+  struct euclidean_heuristic:public
+    boost::astar_heuristic<graph, edge_weight_map_reference> {
+    euclidean_heuristic(vertex_descriptor goal):m_goal(goal) {}
+
+    float operator()(vertex_descriptor v) {
+      return sqrt(pow(m_goal[0]-v[0], 2) + pow(m_goal[1]-v[1], 2));
+    }
+  private:
+    vertex_descriptor m_goal;
+  };
+
+  // Exception thrown when the goal is found
+  struct found_goal {};
+  // Visitor that terminates when we find the goal
+  // template<typename graph, typename vertex_descriptor>
+  struct astar_goal_visitor:public boost::default_astar_visitor {
+    astar_goal_visitor(vertex_descriptor goal):m_goal(m_goal) {}
+
+    void examine_vertex(vertex_descriptor u, graph& g) {
+      if (u == m_goal)
+        throw found_goal();
+    }
+  private:
+    vertex_descriptor m_goal;
+  };
+
+
   // Print vertices as (x, y) ordered pairs.
   std::ostream& operator<<(std::ostream& output, const vertex_descriptor& v) {
     output << "(" << v[0] << ", " << v[1] << ")";
@@ -98,31 +131,3 @@ namespace grid {
     return output;
   }
 }
-
-
-
-// Euclidean heuristic for a grid
-// struct EuclideanHeuristic:public
-//   boost::astar_heuristic<GridGraph, float> {
-//   EuclideanHeuristic(Vertex goal):goal(goal) {};
-//   float operator()(Vertex v) {
-//     return (goal[0]-v[0])<<1 + (goal[1]-v[1])<<1;
-//   }
-// private:
-//   Vertex goal;
-// };
-
-
-// Exception thrown when the goal is found
-// struct found_goal {};
-// Visitor that terminates when we find the goal
-// template<typename Graph, typename Vertex>
-// struct AstarGoalVisitor:public boost::default_astar_visitor {
-//   AstarGoalVisitor(Vertex goal):goal(goal) {}
-//   void examine_vertex(Vertex u, Graph& g) {
-//     if (u == goal)
-//       throw found_goal();
-//   }
-// private:
-//   Vertex goal;
-// };
