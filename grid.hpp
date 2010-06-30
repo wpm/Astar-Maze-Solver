@@ -5,13 +5,8 @@
 
 
 namespace boost {
-// Forward declarations
-  struct edge_weight_map;
-
-  // A non-wrapping rank 2 grid
-  #define RANK 2
-  typedef grid_graph<RANK> weighted_grid;
-  typedef array<std::size_t, RANK> dimension_array;
+  // A non-wrapping rank 2 grid graph
+  typedef grid_graph<2> weighted_grid;
 
   typedef graph_traits<weighted_grid>::vertex_descriptor vertex_descriptor;
   typedef graph_traits<weighted_grid>::edge_descriptor edge_descriptor;
@@ -27,8 +22,8 @@ namespace boost {
     typedef readable_property_map_tag category;
 
     reference operator[](key_type e) const {
-      // All edges have a weight of one.
-      return 1;
+      // All edges have a weight of zero.
+      return 0;
     }
   };
 

@@ -14,8 +14,7 @@ int main(int argc, char* argv[]) {
   function_requires< AStarHeuristicConcept<euclidean_heuristic,
                                            weighted_grid> >();
 
-
-  dimension_array dimensions = { {3, 4} };
+  array<std::size_t, 2> dimensions = { {3, 4} };
   weighted_grid g(dimensions);
 
   // Edge weights are implemented.
