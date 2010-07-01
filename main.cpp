@@ -14,8 +14,13 @@ int main(int argc, char* argv[]) {
   function_requires< AStarHeuristicConcept<euclidean_heuristic,
                                            weighted_grid> >();
 
-  array<std::size_t, 2> dimensions = { {3, 4} };
+  dimension_array dimensions = { {3, 4} };
   weighted_grid g(dimensions);
+  vertex_descriptor source = vertex(0, g), goal = vertex(3, g);
+  // astar_search(g,
+  //              source,
+  //              euclidean_heuristic(goal),
+  //              visitor(astar_goal_visitor(goal)) );
 
   // Edge weights are implemented.
   const_edge_weight_map edge_map = get(edge_weight, g);
@@ -23,16 +28,9 @@ int main(int argc, char* argv[]) {
   edge_weight_map_reference w = edge_map[e];
   std::cout << e << " weight " << w << std::endl;
 
-  vertex_descriptor source = vertex(0, g), goal = vertex(3, g);
-  std::cout << "Source " << source << "  Goal " << goal << std::endl;
-
   // Vertex indexes are implemented.
   std::cout << source << " index " << get(vertex_index, g)[source]
             << std::endl;
 
-  // astar_search(g,
-  //              source,
-  //              euclidean_heuristic(goal),
-  //              visitor(astar_goal_visitor(goal)) );
   return 0;
 }

@@ -1,12 +1,24 @@
 #include <boost/graph/astar_search.hpp>
-#include <boost/graph/grid_graph.hpp>
+// #include <boost/graph/grid_graph.hpp>
+// The local copy of grid_graph.hpp is
+// r63333 https://svn.boost.org/svn/boost/trunk/boost/graph/grid_graph.hpp
+// which fixes a bug in the released version.
+#include "grid_graph.hpp"
 #include <iostream>
 #include <math.h>
 
 
 namespace boost {
+  #define RANK 2
+  typedef array<std::size_t, RANK> dimension_array;
+
   // A non-wrapping rank 2 grid graph
-  typedef grid_graph<2> weighted_grid;
+  struct weighted_grid: public grid_graph<RANK> {
+    weighted_grid(dimension_array& d):grid_graph<RANK>(d) {};
+    // Where is it documented that vertex_property_type is required?
+    typedef vertex_descriptor vertex_property_type;
+    typedef vertices_size_type vertex_index;
+  };
 
   typedef graph_traits<weighted_grid>::vertex_descriptor vertex_descriptor;
   typedef graph_traits<weighted_grid>::edge_descriptor edge_descriptor;
@@ -92,7 +104,9 @@ namespace boost {
   struct astar_goal_visitor:public default_astar_visitor {
     astar_goal_visitor(vertex_descriptor goal):m_goal(m_goal) {}
 
-    void examine_vertex(vertex_descriptor u, weighted_grid& g) {
+    // Need const otherwise we get no matching function error at:
+    // /opt/local/include/boost/graph/astar_search.hpp:141
+    void examine_vertex(vertex_descriptor u, const weighted_grid& g) {
       if (u == m_goal)
         throw found_goal();
     }
