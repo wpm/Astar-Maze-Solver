@@ -230,6 +230,7 @@ namespace maze_search {
 
   // VertexListGraph
   vertex_descriptor vertex(vertices_size_type, const maze&);
+  
   inline vertex_descriptor vertex(vertices_size_type i, const maze& m) {
     return vertex_descriptor(i % m.x(), i/(m.y()+1));
   }

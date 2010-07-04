@@ -1,5 +1,5 @@
 #include "grid.hpp"
-
+#include <vector>
 
 int main(int argc, char* argv[]) {
   using namespace maze_search;
@@ -21,6 +21,12 @@ int main(int argc, char* argv[]) {
                 << std::endl;
     }
   }
+
+  // vertex_descriptor start = vertex(0, m), goal = vertex(num_vertices(m), m);
+  // astar_search(m,
+  //   start,
+  //   euclidean_heuristic(goal),
+  //   boost::visitor(astar_goal_visitor(goal)) );
 
   return 0;
 }
