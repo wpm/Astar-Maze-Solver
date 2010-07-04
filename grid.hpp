@@ -15,9 +15,6 @@ namespace boost {
   // A non-wrapping rank 2 grid graph
   struct maze: public grid_graph<RANK> {
     maze(dimension_array& d):grid_graph<RANK>(d) {};
-    // Where is it documented that vertex_property_type is required?
-    typedef vertex_descriptor vertex_property_type;
-    typedef vertices_size_type vertex_index;
   };
 
   typedef graph_traits<maze>::vertex_descriptor vertex_descriptor;
