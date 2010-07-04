@@ -36,6 +36,20 @@ namespace maze_search {
 
   // A searchable maze
   class maze {
+    friend std::ostream& operator<<(std::ostream& output, const maze& m) {
+      for (int y = m.m_y-1; y >= 0; y--) {
+        for (vertices_size_type x = 0; x < m.m_x; x++) {
+          if (x != 0)
+            output << " ";
+          output << ".";
+          if (x != m.m_x-1)
+            output << " ";
+        }
+        if (y != 0)
+          output << std::endl;
+      }
+      return output;
+    }
   public:
     // Graph associated types
     typedef position vertex_descriptor;
@@ -85,11 +99,11 @@ namespace maze_search {
   
   // Iterator over adjacent vertices in a grid
   class outgoing_edge_iterator:public boost::iterator_adaptor <
-      outgoing_edge_iterator,
-      boost::counting_iterator<size_t>,
-      edge_descriptor,
-      boost::use_default,
-      edge_descriptor >
+    outgoing_edge_iterator,
+    boost::counting_iterator<size_t>,
+    edge_descriptor,
+    boost::use_default,
+    edge_descriptor >
   {
   public:
     outgoing_edge_iterator():
@@ -189,8 +203,8 @@ namespace maze_search {
   }
 
 
-  inline std::ostream& operator<<(std::ostream& output,
-                                  const edge_descriptor& e) {
+  inline std::ostream&
+  operator<<(std::ostream& output, const edge_descriptor& e) {
     output << e.first << " -> " << e.second;
     return output;
   }

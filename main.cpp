@@ -9,9 +9,10 @@ int main(int argc, char* argv[]) {
   
   out_edge_iterator ei, ei_end;
   for(tie(ei, ei_end) = out_edges(u, m); ei != ei_end; ei++) {
-    edge_descriptor  e = *ei;
-    std::cout << e << std::endl;
+    std::cout << *ei << std::endl;
   }
-  
+
+  std::cout << m << std::endl;
+
   return 0;
 }
