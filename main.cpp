@@ -7,15 +7,15 @@ int main(int argc, char* argv[]) {
 
   function_requires< ReadablePropertyMapConcept<const_edge_weight_map,
                                                 edge_descriptor> >();
-  function_requires< ReadablePropertyGraphConcept<weighted_grid,
+  function_requires< ReadablePropertyGraphConcept<maze,
                                                   edge_descriptor,
                                                   edge_weight_t> >();
-  function_requires< VertexListGraphConcept<weighted_grid> >();
+  function_requires< VertexListGraphConcept<maze> >();
   function_requires< AStarHeuristicConcept<euclidean_heuristic,
-                                           weighted_grid> >();
+                                           maze> >();
 
   dimension_array dimensions = { {3, 4} };
-  weighted_grid g(dimensions);
+  maze g(dimensions);
   vertex_descriptor source = vertex(0, g), goal = vertex(3, g);
   // astar_search(g,
   //              source,

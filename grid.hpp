@@ -13,15 +13,15 @@ namespace boost {
   typedef array<std::size_t, RANK> dimension_array;
 
   // A non-wrapping rank 2 grid graph
-  struct weighted_grid: public grid_graph<RANK> {
-    weighted_grid(dimension_array& d):grid_graph<RANK>(d) {};
+  struct maze: public grid_graph<RANK> {
+    maze(dimension_array& d):grid_graph<RANK>(d) {};
     // Where is it documented that vertex_property_type is required?
     typedef vertex_descriptor vertex_property_type;
     typedef vertices_size_type vertex_index;
   };
 
-  typedef graph_traits<weighted_grid>::vertex_descriptor vertex_descriptor;
-  typedef graph_traits<weighted_grid>::edge_descriptor edge_descriptor;
+  typedef graph_traits<maze>::vertex_descriptor vertex_descriptor;
+  typedef graph_traits<maze>::edge_descriptor edge_descriptor;
 
 
   /*
@@ -42,13 +42,13 @@ namespace boost {
 
   // ReadablePropertyGraph associated types
   template<>
-  struct property_map<weighted_grid,
+  struct property_map<maze,
                       edge_weight_t> {
     typedef edge_weight_map type;
     typedef edge_weight_map const_type;
   };
 
-  typedef property_map<weighted_grid, edge_weight_t>::const_type
+  typedef property_map<maze, edge_weight_t>::const_type
           const_edge_weight_map;
   typedef property_traits<const_edge_weight_map>::reference
           edge_weight_map_reference;
@@ -65,18 +65,18 @@ namespace boost {
 
 
   // ReadablePropertyGraph valid expressions
-  const_edge_weight_map get(edge_weight_t, const weighted_grid&);
+  const_edge_weight_map get(edge_weight_t, const maze&);
 
-  inline const_edge_weight_map get(edge_weight_t, const weighted_grid& g) {
+  inline const_edge_weight_map get(edge_weight_t, const maze& g) {
     return const_edge_weight_map();
   }
 
   edge_weight_map_reference get(edge_weight_t,
-                                const weighted_grid&,
+                                const maze&,
                                 edge_weight_map_key);
 
   inline edge_weight_map_reference get(edge_weight_t tag,
-                                       const weighted_grid& g,
+                                       const maze& g,
                                        edge_weight_map_key e) {
     return get(tag, g)[e];
   }
@@ -87,7 +87,7 @@ namespace boost {
   // This calculates the Euclidean distance between a vertex and a goal
   // vertex.
   struct euclidean_heuristic:public
-    astar_heuristic<weighted_grid, edge_weight_map_reference> {
+    astar_heuristic<maze, edge_weight_map_reference> {
     euclidean_heuristic(vertex_descriptor goal):m_goal(goal) {}
 
     float operator()(vertex_descriptor v) {
@@ -106,7 +106,7 @@ namespace boost {
 
     // Need const otherwise we get no matching function error at:
     // /opt/local/include/boost/graph/astar_search.hpp:141
-    void examine_vertex(vertex_descriptor u, const weighted_grid& g) {
+    void examine_vertex(vertex_descriptor u, const maze& g) {
       if (u == m_goal)
         throw found_goal();
     }
