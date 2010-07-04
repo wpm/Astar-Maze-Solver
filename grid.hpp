@@ -5,8 +5,32 @@
 
 namespace maze_search {
   // Forward declaration
+  class maze;
   class outgoing_edge_iterator;
+  class vertex_index_map;
+  struct edge_weight_map;
+}
 
+// This has to be declared outside the maze_search namespace block so that
+// the namespaces do not nest.
+namespace boost {
+  template<>
+  struct property_map<maze_search::maze,
+                      vertex_index_t> {
+    typedef maze_search::vertex_index_map type;
+    typedef maze_search::vertex_index_map const_type;
+  };
+
+  template<>
+  struct property_map<maze_search::maze,
+                      edge_weight_t> {
+    typedef maze_search::edge_weight_map type;
+    typedef maze_search::edge_weight_map const_type;
+  };
+}
+
+
+namespace maze_search {
   // A position in the maze grid.
   //
   // This is an ordered (x,y) pair.
@@ -62,13 +86,13 @@ namespace maze_search {
     typedef outgoing_edge_iterator out_edge_iterator;
     typedef size_t degree_size_type;
 
+    // VertexListGraph associated types
+    typedef void vertex_iterator;
     typedef size_t vertices_size_type;
-
 
     // Needed for graph_traits
     typedef void adjacency_iterator;
     typedef void in_edge_iterator;
-    typedef void vertex_iterator;
     typedef void edge_iterator;
     typedef void edges_size_type;
 
@@ -87,6 +111,7 @@ namespace maze_search {
   typedef boost::graph_traits<maze>::edge_descriptor edge_descriptor;
   typedef boost::graph_traits<maze>::out_edge_iterator out_edge_iterator;
   typedef boost::graph_traits<maze>::degree_size_type degree_size_type;
+  typedef boost::graph_traits<maze>::vertices_size_type vertices_size_type;
 
   // Tag values passed to an iterator constructor to specify whether it should
   // be created at the start or the end of its range.
@@ -96,7 +121,7 @@ namespace maze_search {
 
 
   // IncidenceGraph
-  
+
   // Iterator over adjacent vertices in a grid
   class outgoing_edge_iterator:public boost::iterator_adaptor <
     outgoing_edge_iterator,
@@ -163,7 +188,7 @@ namespace maze_search {
     vertex_descriptor m_u; // Vertex whose out edges are iterated
   };
 
-  
+
   vertex_descriptor source(edge_descriptor, const maze&);
 
   inline vertex_descriptor
@@ -172,10 +197,9 @@ namespace maze_search {
     return e.first;
   }
 
-  vertex_descriptor target(edge_descriptor, maze&);
+  vertex_descriptor target(edge_descriptor, const maze&);
 
-  inline vertex_descriptor
-  target(edge_descriptor e, const maze&) {
+  inline vertex_descriptor target(edge_descriptor e, const maze& m) {
    // The second vertex in the edge pair is the target.
    return e.second;
   }
@@ -200,6 +224,124 @@ namespace maze_search {
     if (u.second == 0 || u.second == m.y())
       d -= 1;
     return d;
+  }
+
+  // VertexListGraph
+  vertices_size_type num_vertices(const maze&);
+
+  inline vertices_size_type num_vertices(const maze& m) {
+    return m.x() * m.y();
+  }
+
+
+  // Vertex index property
+
+  // Map from vertices to vertex indices
+  class vertex_index_map {
+  public:
+    typedef vertices_size_type value_type;
+    typedef value_type reference;
+    typedef vertex_descriptor key_type;
+    typedef boost::readable_property_map_tag category;
+
+    vertex_index_map():m_maze(NULL) {};
+    vertex_index_map(const maze& m):m_maze(&m) {};
+
+    reference operator[](key_type u) const {
+      return u.first + m_maze->x()*u.second;
+    }
+
+  private:
+    const maze* m_maze;
+  };
+
+  // Use these propety_map and property_traits parameterizations to refer to
+  // the associated property map types.
+  typedef boost::property_map<maze,
+                              boost::vertex_index_t>::const_type
+          const_vertex_index_map;
+  typedef boost::property_traits<const_vertex_index_map>::reference
+          vertex_index_map_reference;
+  typedef boost::property_traits<const_vertex_index_map>::key_type
+          vertex_index_map_key;
+
+  // PropertyMap valid expressions
+  vertex_index_map_reference get(const_vertex_index_map, vertex_index_map_key);
+
+  inline vertex_index_map_reference
+  get(const_vertex_index_map pmap, vertex_index_map_key u) {
+    return pmap[u];
+  }
+
+  // ReadablePropertyGraph valid expressions
+  const_vertex_index_map get(boost::vertex_index_t, const maze&);
+
+  inline const_vertex_index_map
+  get(boost::vertex_index_t, const maze& m) {
+    return const_vertex_index_map(m);
+  }
+
+  vertex_index_map_reference get(boost::vertex_index_t,
+                                const maze&,
+                                vertex_index_map_key);
+
+  inline vertex_index_map_reference get(boost::vertex_index_t tag,
+                                       const maze& m,
+                                       vertex_index_map_key u) {
+    return get(tag, m)[u];
+  }
+
+
+  // Edge weight property
+
+  // Map from edges to floating point weight values
+  struct edge_weight_map {
+    typedef float value_type;
+    typedef value_type reference;
+    typedef edge_descriptor key_type;
+    typedef boost::readable_property_map_tag category;
+
+    reference operator[](key_type e) const {
+      // All edges have a weight of one.
+      return 1;
+    }
+  };
+
+  // Use these propety_map and property_traits parameterizations to refer to
+  // the associated property map types.
+  typedef boost::property_map<maze,
+                              boost::edge_weight_t>::const_type
+          const_edge_weight_map;
+  typedef boost::property_traits<const_edge_weight_map>::reference
+          edge_weight_map_reference;
+  typedef boost::property_traits<const_edge_weight_map>::key_type
+          edge_weight_map_key;
+
+  // PropertyMap valid expressions
+  edge_weight_map_reference get(const_edge_weight_map, edge_weight_map_key);
+
+  inline edge_weight_map_reference
+  get(const_edge_weight_map pmap, edge_weight_map_key e) {
+    return pmap[e];
+  }
+
+
+  // ReadablePropertyGraph valid expressions
+  const_edge_weight_map get(boost::edge_weight_t, const maze&);
+
+  inline const_edge_weight_map
+  get(boost::edge_weight_t, const maze&) {
+    return const_edge_weight_map();
+  }
+
+  edge_weight_map_reference get(boost::edge_weight_t,
+                                const maze&,
+                                edge_weight_map_key);
+
+  inline edge_weight_map_reference get(boost::edge_weight_t tag,
+                                       const maze& m,
+                                       edge_weight_map_key e) {
+    return get(tag, m)[e];
   }
 
 
