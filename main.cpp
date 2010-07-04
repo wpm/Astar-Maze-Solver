@@ -4,23 +4,23 @@
 int main(int argc, char* argv[]) {
   using namespace maze_search;
 
-  maze m(3,3);
-  position u(1,1);
-
-  const_vertex_index_map vertex_index = get(boost::vertex_index, m);
-
-  out_edge_iterator ei, ei_end;
-  for(tie(ei, ei_end) = out_edges(u, m); ei != ei_end; ei++) {
-    edge_descriptor e = *ei;
-    vertex_descriptor v = target(e, m);
-    vertices_size_type index = vertex_index[v];
-    std::cout << e
-              << " weight " << get(boost::edge_weight, m, e)
-              << " index "  << index
-              << std::endl;
-  }
+  maze m(3,2);
 
   std::cout << m << std::endl;
+
+  vertex_iterator vi, vi_end;
+  for(tie(vi, vi_end) = vertices(m); vi != vi_end; vi++) {
+    vertex_descriptor u = *vi;
+    std::cout << u << std::endl;
+
+    out_edge_iterator ei, ei_end;
+    for(tie(ei, ei_end) = out_edges(u, m); ei != ei_end; ei++) {
+      edge_descriptor e = *ei;
+      std::cout << "\t" << e
+                << " weight " << get(boost::edge_weight, m, e)
+                << std::endl;
+    }
+  }
 
   return 0;
 }

@@ -1,13 +1,14 @@
 #include <boost/graph/astar_search.hpp>
 #include <boost/iterator/counting_iterator.hpp>
 #include <iostream>
-// #include <math.h>
+#include <math.h>
 
 namespace maze_search {
   // Forward declaration
   class maze;
   class outgoing_edge_iterator;
   class vertex_index_map;
+  class maze_vertex_iterator;
   struct edge_weight_map;
 }
 
@@ -87,7 +88,7 @@ namespace maze_search {
     typedef size_t degree_size_type;
 
     // VertexListGraph associated types
-    typedef void vertex_iterator;
+    typedef maze_vertex_iterator vertex_iterator;
     typedef size_t vertices_size_type;
 
     // Needed for graph_traits
@@ -112,6 +113,7 @@ namespace maze_search {
   typedef boost::graph_traits<maze>::out_edge_iterator out_edge_iterator;
   typedef boost::graph_traits<maze>::degree_size_type degree_size_type;
   typedef boost::graph_traits<maze>::vertices_size_type vertices_size_type;
+  typedef boost::graph_traits<maze>::vertex_iterator vertex_iterator;
 
   // Tag values passed to an iterator constructor to specify whether it should
   // be created at the start or the end of its range.
@@ -227,10 +229,52 @@ namespace maze_search {
   }
 
   // VertexListGraph
+  vertex_descriptor vertex(vertices_size_type, const maze&);
+  inline vertex_descriptor vertex(vertices_size_type i, const maze& m) {
+    return vertex_descriptor(i % m.x(), i/(m.y()+1));
+  }
+
   vertices_size_type num_vertices(const maze&);
 
   inline vertices_size_type num_vertices(const maze& m) {
     return m.x() * m.y();
+  }
+
+  // Iterator over all the vertices in the maze grid.
+  class maze_vertex_iterator:public boost::iterator_adaptor <
+    maze_vertex_iterator,
+    boost::counting_iterator<vertices_size_type>,
+    vertex_descriptor,
+    boost::use_default,
+    vertex_descriptor >
+  {
+  public:
+    maze_vertex_iterator():
+      maze_vertex_iterator::iterator_adaptor_(0), m_maze(NULL) {};
+    explicit maze_vertex_iterator(const maze& m,
+                                  iterator_start):
+      maze_vertex_iterator::iterator_adaptor_(0),m_maze(&m) {};
+    explicit maze_vertex_iterator(const maze& m,
+                                  iterator_end):
+      maze_vertex_iterator::iterator_adaptor_(num_vertices(m)),m_maze(&m) {};
+
+  private:
+    friend class boost::iterator_core_access;
+
+    vertex_descriptor dereference() const {
+      return vertex(*this->base_reference(), *m_maze);
+    }
+
+    const maze *m_maze;
+  };
+
+  std::pair<vertex_iterator, vertex_iterator> vertices(const maze&);
+
+  inline std::pair<vertex_iterator, vertex_iterator>
+  vertices(const maze& m) {
+    return std::pair<vertex_iterator, vertex_iterator>(
+      vertex_iterator(m, iterator_start()),
+      vertex_iterator(m, iterator_end()) );
   }
 
 
@@ -343,6 +387,44 @@ namespace maze_search {
                                        edge_weight_map_key e) {
     return get(tag, m)[e];
   }
+
+
+  // Euclidean heuristic for a grid
+  //
+  // This calculates the Euclidean distance between a vertex and a goal
+  // vertex.
+  class euclidean_heuristic:public
+    boost::astar_heuristic<maze, edge_weight_map_reference>
+  {
+  public:
+    euclidean_heuristic(vertex_descriptor goal):m_goal(goal) {};
+
+    float operator()(vertex_descriptor v) {
+      return sqrt(pow(m_goal.first  - v.first, 2) +
+                  pow(m_goal.second - v.second, 2));
+    }
+
+  private:
+    vertex_descriptor m_goal;
+  };
+
+  // Exception thrown when the goal is found
+  struct found_goal {};
+
+  // Visitor that terminates when we find the goal
+  struct astar_goal_visitor:public boost::default_astar_visitor {
+    astar_goal_visitor(vertex_descriptor goal):m_goal(m_goal) {};
+
+    // Need const otherwise we get no matching function error at:
+    // /opt/local/include/boost/graph/astar_search.hpp:141
+    void examine_vertex(vertex_descriptor u, const maze& m) {
+      if (u == m_goal)
+        throw found_goal();
+    }
+
+  private:
+    vertex_descriptor m_goal;
+  };
 
 
   inline std::ostream&
