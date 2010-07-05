@@ -1,5 +1,7 @@
-#include <boost/graph/astar_search.hpp>
-// #include "astar_search.hpp"
+// Boost version 1.42 does not compile because of 3917
+// https://svn.boost.org/trac/boost/ticket/3917
+// #include <boost/graph/astar_search.hpp>
+#include "astar_search.hpp"
 #include <boost/iterator/counting_iterator.hpp>
 #include <iostream>
 #include <math.h>
