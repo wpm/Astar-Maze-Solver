@@ -1,4 +1,5 @@
 #include <boost/graph/astar_search.hpp>
+// #include "astar_search.hpp"
 #include <boost/iterator/counting_iterator.hpp>
 #include <iostream>
 #include <math.h>
@@ -58,6 +59,12 @@ namespace maze_search {
     }
   };
 
+  // Tag values that specify the traversal type in graph::traversal_category.
+  struct maze_traversal_catetory:
+    virtual public boost::vertex_list_graph_tag,
+    virtual public boost::incidence_graph_tag
+    {};
+
 
   // A searchable maze
   class maze {
@@ -80,7 +87,7 @@ namespace maze_search {
     typedef position vertex_descriptor;
     typedef boost::directed_tag directed_category;
     typedef boost::disallow_parallel_edge_tag edge_parallel_category;
-    typedef boost::vertex_list_graph_tag traversal_category;
+    typedef maze_traversal_catetory traversal_category;
 
     // IncidenceGraph associated types
     typedef std::pair<vertex_descriptor, vertex_descriptor> edge_descriptor;
