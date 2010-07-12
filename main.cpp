@@ -366,25 +366,6 @@ bool maze::solve() {
   std::cout << "Goal " << goal << std::endl;
   std::cout << std::endl;
 
-  std::cout << "Vertex <-> Index mapping" << std::endl;
-  for (vertices_size_type i=0; i < num_vertices(*this); i++) {
-    vertex_descriptor u = vertex(i, *this);
-    std::cout << i << "<->" << u << "<->" << get(index, u) << std::endl;
-  }
-  std::cout << std::endl;
-
-  out_edge_iterator ei, ei_end;
-  std::cout << "Edges from " << source << std::endl;
-  for (tie(ei, ei_end) = out_edges(source, *this); ei != ei_end; ei++) {
-    std::cout << *ei << " [" << get(weight, *ei) << "]" << std::endl;
-  }
-  vertex_descriptor u = vertex_descriptor(1, 1);
-  std::cout << "Edges from " << u << std::endl;
-  for (tie(ei, ei_end) = out_edges(u, *this); ei != ei_end; ei++) {
-    std::cout << *ei << " [" << get(weight, *ei) << "]" << std::endl;
-  }
-  std::cout << std::endl;
-
   try {
     astar_search(*this,
                  source,
@@ -395,24 +376,22 @@ bool maze::solve() {
                  distance_map(dist_pmap).
                  visitor(visitor) );
   } catch(found_goal fg) {
-    std::cout << "Found goal " << goal << std::endl;
+    std::cout << "Predecessor and distance maps" << std::endl;
+    vertex_iterator vi, vi_end;
+    for(tie(vi, vi_end) = vertices(*this); vi != vi_end; vi++) {
+      vertex_descriptor u = *vi;
+      std::cout << u << ": "
+                << "Predecessor " << predecessor[u]
+                << ", Distance " << distance[u] << std::endl;
+    }
+    return true;
   }
 
-  std::cout << "Predecessor and distance maps" << std::endl;
-  vertex_iterator vi, vi_end;
-  for(tie(vi, vi_end) = vertices(*this); vi != vi_end; vi++) {
-    vertex_descriptor u = *vi;
-    std::cout << u << ": "
-              << "Predecessor " << predecessor[u]
-              << ", Distance " << distance[u] << std::endl;
-  }
-
-  return true;
+  return false;
 }
 
 
-int main (int argc, char const *argv[])
-{
+int main (int argc, char const *argv[]) {
   vertices_size_type x = 3;
   vertices_size_type y = 3;
 
@@ -422,7 +401,27 @@ int main (int argc, char const *argv[])
   }
 
   maze m(x, y);
-  m.solve();
+
+  vertex_index_pmap index(m);
+  std::cout << "Vertex <-> Index mapping" << std::endl;
+  for (vertices_size_type i=0; i < num_vertices(m); i++) {
+    vertex_descriptor u = vertex(i, m);
+    std::cout << i << "<->" << u << "<->" << get(index, u) << std::endl;
+  }
+  std::cout << std::endl;
+
+  edge_weight_pmap weight;
+  vertex_descriptor u[] = {vertex_descriptor(0, 0), vertex_descriptor(1, 1)};
+  for (int i = 0; i< sizeof(u)/sizeof(u[0]); i++) {
+    out_edge_iterator ei, ei_end;
+    std::cout << "Edges from " << u[i] << std::endl;
+    for (tie(ei, ei_end) = out_edges(u[i], m); ei != ei_end; ei++)
+      std::cout << *ei << " [" << get(weight, *ei) << "]" << std::endl;
+  }
+  std::cout << std::endl;
+
+  if (m.solve())
+    std::cout << "Found goal" << std::endl;
   std::cout << m << std::endl;
   return 0;
 }
