@@ -1,7 +1,7 @@
 A-Star Maze Solver
 ==================
 
-This program uses A-star search to solve a two-dimensional maze.  It is an example of how to apply Boost Graph Library algorithms to implicit graphs.
+This program uses the A-star search algorithm in the Boost Graph Library to solve a maze.  It is an example of how to apply Boost Graph Library algorithms to implicit graphs.
 
 
 Installation
