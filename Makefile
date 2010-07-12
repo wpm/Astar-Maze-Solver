@@ -1,6 +1,6 @@
 TARGET = grid
 OBJECTS = main.o
-CXXFLAGS = -g -I/opt/local/include
+CXXFLAGS = -g -I/src/boost-trunk
 
 $(TARGET): $(OBJECTS)
 	g++ $(OBJECTS) -o $@
