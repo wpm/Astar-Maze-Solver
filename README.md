@@ -1,5 +1,5 @@
-Searchable Grid Example
-=======================
+A-Star Maze Solver
+==================
 
 This program uses A-star search to solve a two-dimensional maze.  It is an example of how to apply Boost Graph Library algorithms to implicit graphs.
 
