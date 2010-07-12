@@ -387,10 +387,6 @@ bool maze::solve() {
   euclidean_heuristic heuristic(goal);
   astar_goal_visitor visitor(goal);
 
-  std::cout << "Source " << source << std::endl;
-  std::cout << "Goal " << goal << std::endl;
-  std::cout << std::endl;
-
   try {
     astar_search(*this,
                  source,
@@ -407,15 +403,6 @@ bool maze::solve() {
       m_path.insert(u);
     m_path.insert(source);
     m_path_length = distance[goal];
-    // Debug code.
-    std::cout << "Predecessor and distance maps" << std::endl;
-    vertex_iterator vi, vi_end;
-    for(tie(vi, vi_end) = vertices(*this); vi != vi_end; vi++) {
-      vertex_descriptor u = *vi;
-      std::cout << u << ": "
-                << "Predecessor " << predecessor[u]
-                << ", Distance " << distance[u] << std::endl;
-    }
     return true;
   }
 
@@ -497,8 +484,6 @@ maze random_maze(vertices_size_type x, vertices_size_type y) {
 }
 
 
-
-
 int main (int argc, char const *argv[]) {
   vertices_size_type x = 3;
   vertices_size_type y = 3;
@@ -510,24 +495,6 @@ int main (int argc, char const *argv[]) {
 
   std::srand(std::time(0));
   maze m = random_maze(x, y);
-
-  vertex_index_pmap index(m);
-  std::cout << "Vertex <-> Index mapping" << std::endl;
-  for (vertices_size_type i=0; i < num_vertices(m); i++) {
-    vertex_descriptor u = vertex(i, m);
-    std::cout << i << "<->" << u << "<->" << get(index, u) << std::endl;
-  }
-  std::cout << std::endl;
-
-  edge_weight_pmap weight;
-  vertex_descriptor u[] = {vertex_descriptor(0, 0), vertex_descriptor(1, 1)};
-  for (int i = 0; i< sizeof(u)/sizeof(u[0]); i++) {
-    out_edge_iterator ei, ei_end;
-    std::cout << "Edges from " << u[i] << std::endl;
-    for (tie(ei, ei_end) = out_edges(u[i], m); ei != ei_end; ei++)
-      std::cout << *ei << " [" << get(weight, *ei) << "]" << std::endl;
-  }
-  std::cout << std::endl;
 
   if (m.solve())
     std::cout << "Solved the maze." << std::endl;
