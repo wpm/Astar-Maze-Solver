@@ -416,38 +416,47 @@ std::ostream& operator<<(std::ostream& output, const edge_descriptor& e) {
   return output;
 }
 
-
+#define BARRIER "#"
 // Print the maze as an ASCII map.
 std::ostream& operator<<(std::ostream& output, const maze& m) {
   vertex_descriptor u;
-  // y must be int and not the unsigned vertices_size_type because the
-  // boundary condition is y==-1.
+  
+    // Header
+    for (vertices_size_type i = 0; i < m.m_x + 2; i++)
+      output << BARRIER;
+    output << std::endl;
+  // Body
+  // Enumerate rows in reverse order and columns in regular order so that
+  // (0,0) appears in the lower left-hand corner.  This requires that y be int
+  // and not the unsigned vertices_size_type because the loop exit condition
+  // is y==-1.
   for (int y = m.m_y-1; y >= 0; y--) {
     for (vertices_size_type x = 0; x < m.m_x; x++) {
-      // Put a space before each character except at the left-hand side.
-      if (x != 0)
-        output << " ";
+      // Put a barrier on the left-hand side.
+      if (x == 0)
+        output << BARRIER;
       // Put the character representing this point in the maze grid.
       u = vertex_descriptor(x, y);
       if (m.m_path.find(u) != m.m_path.end())
-        output << "*";
-      else if (m.has_barrier(u))
-        output << "#";
-      else
         output << ".";
-      // Put a space after each character except at the right-hand side.
-      if (x != m.m_x-1)
+      else if (m.has_barrier(u))
+        output << BARRIER;
+      else
         output << " ";
+      // Put a barrier on the right-hand side.
+      if (x == m.m_x-1)
+        output << BARRIER;
     }
     // Put a newline after every row except the last one.
-    if (y != 0)
-      output << std::endl;
+    output << std::endl;
   }
+  // Footer
+  for (vertices_size_type i = 0; i < m.m_x + 2; i++)
+    output << BARRIER;
   if (m.solved())
     output << std::endl << "Solution length " << m.m_path_length;
   return output;
 }
-
 
 
 maze random_maze(vertices_size_type x, vertices_size_type y) {
@@ -485,8 +494,8 @@ maze random_maze(vertices_size_type x, vertices_size_type y) {
 
 
 int main (int argc, char const *argv[]) {
-  vertices_size_type x = 3;
-  vertices_size_type y = 3;
+  vertices_size_type x = 10;
+  vertices_size_type y = 10;
 
   if (argc == 3) {
     x = atoi(argv[1]);
