@@ -239,7 +239,7 @@ degree_size_type out_degree(vertex_descriptor u, const maze& m) {
 // VertexListGraph
 vertex_descriptor vertex(vertices_size_type i, const maze& m) {
   // Return a vertex given a vertex index.
-  return vertex_descriptor(i % m.x(), i/m.y());
+  return vertex_descriptor(i % m.x(), i/m.x());
 }
 
 vertices_size_type num_vertices(const maze& m) {
