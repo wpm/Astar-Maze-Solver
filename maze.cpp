@@ -17,6 +17,10 @@ class outgoing_edge_iterator;
 class maze_vertex_iterator;
 
 // This is an ordered (x,y) pair.
+//
+// Ordered pairs are used a locations in the maze grid and as offsets.  To
+// enable them to be used as offsets, their numeric values are signed and an
+// addition operator is defined.
 class ordered_pair: public std::pair<int, int> {
 friend std::ostream& operator<<(std::ostream& output, const ordered_pair& p) {
   output << "(" << p.first << ", " << p.second << ")";
