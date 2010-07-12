@@ -34,10 +34,8 @@ public:
   }
 };
 
-
 // Distance traveled in the maze
 typedef double distance;
-
 
 // Tag values that specify the traversal type in graph::traversal_category.
 struct maze_traversal_catetory:
@@ -46,9 +44,20 @@ struct maze_traversal_catetory:
   {};
 
 // A searchable maze
+//
+// The maze is grid of locations which can either be empty or contain a
+// barrier.  You can move to an adjacent location in the grid by going up,
+// down, left and right.  Moving onto a barrier is not allowed.  The maze can
+// be solved by finding a path from the lower-left-hand corner to the
+// upper-right-hand corner.  If no open path exists between these two
+// locations, the maze is unsolvable.
+//
+// The maze is implemented as an implicit graph where locations are vertices
+// and edges connect adjacent vertices that are not blocked by barriers.
+// A-star search is used to find a path through the maze. Each edge has a
+// weight of one, so the total path length is equal to the number of edges
+// traversed.
 class maze {
-  friend std::ostream& operator<<(std::ostream&, const maze&);
-
 public:
   // Graph associated types
   typedef ordered_pair vertex_descriptor;
@@ -65,7 +74,7 @@ public:
   typedef maze_vertex_iterator vertex_iterator;
   typedef std::size_t vertices_size_type;
 
-  // Needed for graph_traits
+  // These types are not used but must be defined for graph_traits<...>.
   typedef void adjacency_iterator;
   typedef void in_edge_iterator;
   typedef void edge_iterator;
@@ -74,12 +83,17 @@ public:
   // A set of vertices
   typedef std::set<vertex_descriptor> vertex_set;
 
+  friend std::ostream& operator<<(std::ostream&, const maze&);
+  friend maze random_maze(vertices_size_type, vertices_size_type);
+
   maze():m_x(0),m_y(0) {};
   maze(vertices_size_type x, vertices_size_type y):m_x(x),m_y(y) {};
 
   vertices_size_type x() const {return m_x;}
   vertices_size_type y() const {return m_y;}
 
+  // If adding or removing a barrier changes the maze, any previously found
+  // solution is discarded.
   void add_barrier(vertex_descriptor u) {
     if (!has_barrier(u))
       m_path.clear();
@@ -125,13 +139,13 @@ private:
   distance m_path_length;
 };
 
+// Use these parameterizations to refer to the maze graph types.
 typedef boost::graph_traits<maze>::vertex_descriptor vertex_descriptor;
 typedef boost::graph_traits<maze>::edge_descriptor edge_descriptor;
 typedef boost::graph_traits<maze>::out_edge_iterator out_edge_iterator;
 typedef boost::graph_traits<maze>::degree_size_type degree_size_type;
 typedef boost::graph_traits<maze>::vertices_size_type vertices_size_type;
 typedef boost::graph_traits<maze>::vertex_iterator vertex_iterator;
-
 
 // Tag values passed to an iterator constructor to specify whether it should
 // be created at the start or the end of its range.
@@ -140,6 +154,13 @@ struct iterator_start:virtual public iterator_position {};
 struct iterator_end:virtual public iterator_position {};
 
 // Iterator over adjacent vertices in a grid
+//
+// This iterates into vertices above, below, to the left of and to the right
+// of the current vertex, remaining on the grid and not going into barrier
+// vertices.
+//
+// It is an adaptation of a counting iterator, which is used to point into
+// the static list of offsets in the current_offset function.
 class outgoing_edge_iterator:public boost::iterator_adaptor <
   outgoing_edge_iterator,
   boost::counting_iterator<std::size_t>,
@@ -176,6 +197,8 @@ private:
     return edge_descriptor(m_u, m_u + current_offset());
   }
 
+  // Cycle through the offsets until we either find one that points to an
+  // accessible adjacent vertex or we have tried them all.
   void find_next_valid_offset() {
     while (invalid() && *this->base_reference() < 4)
       this->base_reference()++;
@@ -183,10 +206,10 @@ private:
 
   ordered_pair current_offset () const {
     static const ordered_pair offset[] = {
-      ordered_pair(0, -1),
-      ordered_pair(1, 0),
-      ordered_pair(0, 1),
-      ordered_pair(-1, 0)};
+      ordered_pair(0, -1),  // Down
+      ordered_pair(1, 0),   // Right
+      ordered_pair(0, 1),   // Up
+      ordered_pair(-1, 0)}; // Left
     return offset[*this->base_reference()];
   }
 
@@ -238,7 +261,6 @@ degree_size_type out_degree(vertex_descriptor u, const maze& m) {
 
 // VertexListGraph
 vertex_descriptor vertex(vertices_size_type i, const maze& m) {
-  // Return a vertex given a vertex index.
   return vertex_descriptor(i % m.x(), i/m.x());
 }
 
@@ -246,8 +268,10 @@ vertices_size_type num_vertices(const maze& m) {
   return m.x() * m.y();
 }
 
-
 // Iterator over all the vertices in the maze grid.
+//
+// This is an adaptation of a counting iterator that ranges over all the
+// vertex indexes.
 class maze_vertex_iterator:public boost::iterator_adaptor <
   maze_vertex_iterator,
   boost::counting_iterator<vertices_size_type>,
@@ -281,13 +305,10 @@ std::pair<vertex_iterator, vertex_iterator> vertices(const maze& m) {
     vertex_iterator(m, iterator_end()) );
 }
 
-
-
 // Vertex-to-vertex mapping used by the predecessor map
 typedef std::map<vertex_descriptor, vertex_descriptor> pred_map;
 // Vetex-to-distance mapping used by the distance map
 typedef std::map<vertex_descriptor, distance> dist_map;
-
 
 // Readable Property Map for edge weights.
 struct edge_weight_pmap {
@@ -306,7 +327,6 @@ typedef boost::property_traits<edge_weight_pmap>::key_type
 edge_weight_pmap_value get(edge_weight_pmap, edge_weight_pmap_key) {
   return 1;
 }
-
 
 // Readable Property Map for vertex indices.
 class vertex_index_pmap {
@@ -336,7 +356,6 @@ vertex_index_pmap_value get(vertex_index_pmap pmap, vertex_index_pmap_key u) {
   return pmap[u];
 }
 
-
 // Euclidean heuristic for a grid
 //
 // This calculates the Euclidean distance between a vertex and a goal
@@ -354,11 +373,10 @@ private:
   vertex_descriptor m_goal;
 };
 
-
-// Exception thrown when the goal is found
+// Exception thrown when the goal vertex is found
 struct found_goal {};
 
-// Visitor that terminates when we find the goal
+// Visitor that terminates when we find the goal vertex
 struct astar_goal_visitor:public boost::default_astar_visitor {
   astar_goal_visitor(vertex_descriptor goal):m_goal(goal) {};
 
@@ -373,7 +391,7 @@ private:
   vertex_descriptor m_goal;
 };
 
-
+// Solve the maze using A-star search.  Return true if a solution was found.
 bool maze::solve() {
   edge_weight_pmap weight;
   pred_map predecessor;
@@ -381,6 +399,8 @@ bool maze::solve() {
   dist_map distance;
   boost::associative_property_map<dist_map> dist_pmap(distance);
 
+  // Try to find a path from the lower-left-hand corner (0,0) to the
+  // upper-right-hand corner (x-1, y-1).
   ordered_pair source = vertex(0, *this);
   ordered_pair goal = vertex(num_vertices(*this)-1, *this);
   vertex_index_pmap index(*this);
@@ -409,7 +429,6 @@ bool maze::solve() {
   return false;
 }
 
-
 // Print edges as (x1, y1) -> (x2, y2).
 std::ostream& operator<<(std::ostream& output, const edge_descriptor& e) {
   output << e.first << " -> " << e.second;
@@ -419,12 +438,10 @@ std::ostream& operator<<(std::ostream& output, const edge_descriptor& e) {
 #define BARRIER "#"
 // Print the maze as an ASCII map.
 std::ostream& operator<<(std::ostream& output, const maze& m) {
-  vertex_descriptor u;
-  
-    // Header
-    for (vertices_size_type i = 0; i < m.m_x + 2; i++)
-      output << BARRIER;
-    output << std::endl;
+  // Header
+  for (vertices_size_type i = 0; i < m.m_x + 2; i++)
+    output << BARRIER;
+  output << std::endl;
   // Body
   // Enumerate rows in reverse order and columns in regular order so that
   // (0,0) appears in the lower left-hand corner.  This requires that y be int
@@ -436,7 +453,7 @@ std::ostream& operator<<(std::ostream& output, const maze& m) {
       if (x == 0)
         output << BARRIER;
       // Put the character representing this point in the maze grid.
-      u = vertex_descriptor(x, y);
+      vertex_descriptor u = vertex_descriptor(x, y);
       if (m.m_path.find(u) != m.m_path.end())
         output << ".";
       else if (m.has_barrier(u))
@@ -458,19 +475,19 @@ std::ostream& operator<<(std::ostream& output, const maze& m) {
   return output;
 }
 
-
+// Generate a maze with a random assorted of barriers.
 maze random_maze(vertices_size_type x, vertices_size_type y) {
   maze m(x, y);
-  // About one third of the maze should be barriers.
   vertices_size_type n = num_vertices(m);
   vertex_descriptor source = vertex(0, m);
   vertex_descriptor goal = vertex(n - 1, m);
+  // About one third of the maze should be barriers.
   int barriers = n/3;
   while (barriers > 0) {
     // Choose horizontal or vertical direction.
     std::size_t direction = std::rand() % 2;
-    // Wall should be about one quarter of the maze size in this direction.
-    vertices_size_type length = (direction == 0 ? m.x():m.y())/4;
+    // Walls should be about one quarter of the maze size in this direction.
+    vertices_size_type length = (direction == 0 ? m.m_x:m.m_y)/4;
     if (length == 0)
       length = 1;
     // Create the wall while decrementing the total barrier count.
@@ -478,7 +495,7 @@ maze random_maze(vertices_size_type x, vertices_size_type y) {
     while (length) {
       // Start and goal spaces should never be barriers.
       if (u != source && u != goal) {
-        m.add_barrier(u);
+        m.m_barriers.insert(u);
         barriers--;
         length--;
       }
@@ -494,7 +511,9 @@ maze random_maze(vertices_size_type x, vertices_size_type y) {
 
 
 int main (int argc, char const *argv[]) {
-  vertices_size_type x = 10;
+  // The default maze size is 20x10.  A different size may be specified on
+  // the command line.
+  vertices_size_type x = 20;
   vertices_size_type y = 10;
 
   if (argc == 3) {
