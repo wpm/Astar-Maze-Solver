@@ -2,6 +2,7 @@
 #include <boost/iterator/counting_iterator.hpp>
 #include <iostream>
 #include <map>
+#include <set>
 
 
 // Forward declaration
@@ -33,29 +34,19 @@ public:
 };
 
 
+// Distance traveled in the maze
+typedef double distance;
+
+
 // Tag values that specify the traversal type in graph::traversal_category.
 struct maze_traversal_catetory:
   virtual public boost::vertex_list_graph_tag,
   virtual public boost::incidence_graph_tag
   {};
 
-
 // A searchable maze
 class maze {
-  friend std::ostream& operator<<(std::ostream& output, const maze& m) {
-    for (int y = m.m_y-1; y >= 0; y--) {
-      for (vertices_size_type x = 0; x < m.m_x; x++) {
-        if (x != 0)
-          output << " ";
-        output << ".";
-        if (x != m.m_x-1)
-          output << " ";
-      }
-      if (y != 0)
-        output << std::endl;
-    }
-    return output;
-  }
+  friend std::ostream& operator<<(std::ostream&, const maze&);
 
 public:
   // Graph associated types
@@ -79,6 +70,9 @@ public:
   typedef void edge_iterator;
   typedef void edges_size_type;
 
+  // A set of vertices
+  typedef std::set<vertex_descriptor> vertex_set;
+
   maze():m_x(0),m_y(0) {};
   maze(vertices_size_type x, vertices_size_type y):m_x(x),m_y(y) {};
 
@@ -86,12 +80,17 @@ public:
   vertices_size_type y() const {return m_y;}
 
   bool solve();
+  bool solved() const {return !m_path.empty();}
 
 private:
   // Size of the x dimension
   size_t m_x;
   // Size of the y dimension
   size_t m_y;
+  // The set of vertices on a path through the maze
+  vertex_set m_path;
+  // The length of the solution path
+  distance m_path_length;
 };
 
 typedef boost::graph_traits<maze>::vertex_descriptor vertex_descriptor;
@@ -249,9 +248,6 @@ std::pair<vertex_iterator, vertex_iterator> vertices(const maze& m) {
 
 
 
-// Distance traveled in the maze
-typedef double distance;
-
 // Vertex-to-vertex mapping used by the predecessor map
 typedef std::map<vertex_descriptor, vertex_descriptor> pred_map;
 // Vetex-to-distance mapping used by the distance map
@@ -274,12 +270,6 @@ typedef boost::property_traits<edge_weight_pmap>::key_type
 // All edges are one unit long.
 edge_weight_pmap_value get(edge_weight_pmap, edge_weight_pmap_key) {
   return 1;
-}
-
-// Print edges as (x1, y1) -> (x2, y2).
-std::ostream& operator<<(std::ostream& output, const edge_descriptor& e) {
-  output << e.first << " -> " << e.second;
-  return output;
 }
 
 
@@ -376,6 +366,13 @@ bool maze::solve() {
                  distance_map(dist_pmap).
                  visitor(visitor) );
   } catch(found_goal fg) {
+    // Walk backwards from the goal through the predecessor chain adding
+    // vertices to the solution path.
+    for (vertex_descriptor u = goal; u != source; u = predecessor[u])
+      m_path.insert(u);
+    m_path.insert(source);
+    m_path_length = distance[goal];
+    // Debug code.
     std::cout << "Predecessor and distance maps" << std::endl;
     vertex_iterator vi, vi_end;
     for(tie(vi, vi_end) = vertices(*this); vi != vi_end; vi++) {
@@ -388,6 +385,43 @@ bool maze::solve() {
   }
 
   return false;
+}
+
+
+// Print edges as (x1, y1) -> (x2, y2).
+std::ostream& operator<<(std::ostream& output, const edge_descriptor& e) {
+  output << e.first << " -> " << e.second;
+  return output;
+}
+
+
+// Print the maze as an ASCII map.
+std::ostream& operator<<(std::ostream& output, const maze& m) {
+  vertex_descriptor u;
+  // y must be int and not the unsigned vertices_size_type because the
+  // boundary condition is y==-1.
+  for (int y = m.m_y-1; y >= 0; y--) {
+    for (vertices_size_type x = 0; x < m.m_x; x++) {
+      // Put a space before each character except at the left-hand side.
+      if (x != 0)
+        output << " ";
+      // Put the character representing this point in the maze grid.
+      u = vertex_descriptor(x, y);
+      if (m.m_path.find(u) != m.m_path.end())
+        output << "*";
+      else
+        output << ".";
+      // Put a space after each character except at the right-hand side.
+      if (x != m.m_x-1)
+        output << " ";
+    }
+    // Put a newline after every row except the last one.
+    if (y != 0)
+      output << std::endl;
+  }
+  if (m.solved())
+    output << std::endl << "Solution length " << m.m_path_length;
+  return output;
 }
 
 
