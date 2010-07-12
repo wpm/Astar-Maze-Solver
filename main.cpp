@@ -177,7 +177,7 @@ private:
   }
 
   void find_next_valid_offset() {
-    while (off_grid() && *this->base_reference() < 4)
+    while (invalid() && *this->base_reference() < 4)
       this->base_reference()++;
   }
 
@@ -190,8 +190,11 @@ private:
     return offset[*this->base_reference()];
   }
 
-  bool off_grid() {
+  // An offset is invalid if it lands on a barrier or off the grid.
+  bool invalid() {
     ordered_pair v = m_u + current_offset();
+    if (m_maze->has_barrier(v))
+      return true;
     if (v.first < 0 || v.first == m_maze->x())
       return true;
     if (v.second < 0 || v.second == m_maze->y())
@@ -527,7 +530,9 @@ int main (int argc, char const *argv[]) {
   std::cout << std::endl;
 
   if (m.solve())
-    std::cout << "Found goal" << std::endl;
+    std::cout << "Solved the maze." << std::endl;
+  else
+    std::cout << "The maze is not solvable." << std::endl;
   std::cout << m << std::endl;
   return 0;
 }
