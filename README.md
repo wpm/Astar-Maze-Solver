@@ -7,7 +7,7 @@ This program uses A-star search to solve a two-dimensional maze.  It is an examp
 Installation
 ============
 
-You must have the Boost Graph Library installed.  Set BOOST\_PATH in the Makefile to point to the root of your Boost include tree.  The _astar-maze_ program builds in the distribution directory and does not install anywhere else on the system.
+You must have the Boost Graph Library version 1.44 or higher installed.  Set BOOST\_PATH in the Makefile to point to the root of your Boost include tree.  The _astar-maze_ program builds in the distribution directory and does not install anywhere else on the system.
 
 
 History
