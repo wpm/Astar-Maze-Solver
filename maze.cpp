@@ -338,6 +338,10 @@ edge_weight_pmap_value get(edge_weight_pmap, edge_weight_pmap_key) {
   return 1;
 }
 
+edge_weight_pmap get(boost::edge_weight_t, const maze&) {
+  return edge_weight_pmap();
+}
+
 // Readable Property Map for vertex indices.
 class vertex_index_pmap {
 public:
@@ -403,7 +407,7 @@ private:
 
 // Solve the maze using A-star search.  Return true if a solution was found.
 bool maze::solve() {
-  edge_weight_pmap weight;
+  edge_weight_pmap weight = get(boost::edge_weight, *this);
   pred_map predecessor;
   boost::associative_property_map<pred_map> pred_pmap(predecessor);
   dist_map distance;
