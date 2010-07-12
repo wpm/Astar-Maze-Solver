@@ -116,11 +116,11 @@ public:
   vertex_descriptor next(vertex_descriptor u, std::size_t direction) const {
     vertex_descriptor v = u;
     if (direction == 0) {
-      if (u.first != m_x)
+      if (u.first != (int)m_x)
         v += ordered_pair(1, 0);
     }
     else {
-      if (u.second != m_x)
+      if (u.second != (int)m_x)
         v += ordered_pair(0, 1);
     }
     return v;
@@ -218,9 +218,9 @@ private:
     ordered_pair v = m_u + current_offset();
     if (m_maze->has_barrier(v))
       return true;
-    if (v.first < 0 || v.first == m_maze->x())
+    if (v.first < 0 || v.first == (int)m_maze->x())
       return true;
-    if (v.second < 0 || v.second == m_maze->y())
+    if (v.second < 0 || v.second == (int)m_maze->y())
       return true;
     return false;
   }
@@ -252,9 +252,9 @@ out_edges(vertex_descriptor u, const maze& m) {
 degree_size_type out_degree(vertex_descriptor u, const maze& m) {
   degree_size_type d = 4;
 
-  if (u.first == 0 || u.first == m.x())
+  if (u.first == 0 || u.first == (int)m.x())
     d -= 1;
-  if (u.second == 0 || u.second == m.y())
+  if (u.second == 0 || u.second == (int)m.y())
     d -= 1;
   return d;
 }
