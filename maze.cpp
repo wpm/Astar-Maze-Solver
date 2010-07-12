@@ -48,7 +48,7 @@ public:
 typedef double distance;
 
 // Tag values that specify the traversal type in graph::traversal_category.
-struct maze_traversal_catetory:
+struct maze_traversal_category:
   virtual public boost::vertex_list_graph_tag,
   virtual public boost::incidence_graph_tag
   {};
@@ -73,7 +73,7 @@ public:
   typedef ordered_pair vertex_descriptor;
   typedef boost::directed_tag directed_category;
   typedef boost::disallow_parallel_edge_tag edge_parallel_category;
-  typedef maze_traversal_catetory traversal_category;
+  typedef maze_traversal_category traversal_category;
 
   // IncidenceGraph associated types
   typedef std::pair<vertex_descriptor, vertex_descriptor> edge_descriptor;
