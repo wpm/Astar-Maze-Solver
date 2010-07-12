@@ -4,10 +4,10 @@ ARCHIVE_NAME=$(PACKAGE)-$(VERSION)
 
 BOOST_PATH=/src/boost-trunk
 
-FILES=LICENSE_1_0.txt Makefile README.md main.cpp
+FILES=LICENSE_1_0.txt Makefile README.md maze.cpp
 
 TARGET = astar-maze
-OBJECTS = main.o
+OBJECTS = maze.o
 CXXFLAGS = -g -I$(BOOST_PATH) -Wall -Werror -O3
 
 $(TARGET): $(OBJECTS)
