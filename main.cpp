@@ -1,20 +1,428 @@
-#include "grid.hpp"
+#include <boost/graph/astar_search.hpp>
+#include <boost/iterator/counting_iterator.hpp>
+#include <iostream>
+#include <map>
 
 
-int main(int argc, char* argv[]) {
-  using namespace maze_search;
+// Forward declaration
+class outgoing_edge_iterator;
+class maze_vertex_iterator;
 
-  maze m(3,2);
-  vertex_descriptor start = vertex(0, m), goal = vertex(num_vertices(m), m);
-  
-  try {
-    astar_search(m,
-      start,
-      euclidean_heuristic(goal),
-      boost::visitor(astar_goal_visitor(goal)) );
-  } catch(found_goal fg) {
-    std::cout << "Found vertex " << goal << std::endl;
+// This is an ordered (x,y) pair.
+class ordered_pair: public std::pair<int, int> {
+friend std::ostream& operator<<(std::ostream& output, const ordered_pair& p) {
+  output << "(" << p.first << ", " << p.second << ")";
+  return output;
+}
+
+public:
+  ordered_pair():std::pair<int, int>(0, 0) {};
+  ordered_pair(int x, int y):std::pair<int, int>(x, y) {};
+
+  ordered_pair& operator+=(const ordered_pair &rhs) {
+    this->first  += rhs.first;
+    this->second += rhs.second;
+    return *this;
   }
 
+  const ordered_pair operator+(const ordered_pair &other) const {
+    ordered_pair result = *this;
+    result += other;
+    return result;
+  }
+};
+
+
+// Tag values that specify the traversal type in graph::traversal_category.
+struct maze_traversal_catetory:
+  virtual public boost::vertex_list_graph_tag,
+  virtual public boost::incidence_graph_tag
+  {};
+
+
+// A searchable maze
+class maze {
+  friend std::ostream& operator<<(std::ostream& output, const maze& m) {
+    for (int y = m.m_y-1; y >= 0; y--) {
+      for (vertices_size_type x = 0; x < m.m_x; x++) {
+        if (x != 0)
+          output << " ";
+        output << ".";
+        if (x != m.m_x-1)
+          output << " ";
+      }
+      if (y != 0)
+        output << std::endl;
+    }
+    return output;
+  }
+
+public:
+  // Graph associated types
+  typedef ordered_pair vertex_descriptor;
+  typedef boost::directed_tag directed_category;
+  typedef boost::disallow_parallel_edge_tag edge_parallel_category;
+  typedef maze_traversal_catetory traversal_category;
+
+  // IncidenceGraph associated types
+  typedef std::pair<vertex_descriptor, vertex_descriptor> edge_descriptor;
+  typedef outgoing_edge_iterator out_edge_iterator;
+  typedef std::size_t degree_size_type;
+
+  // VertexListGraph associated types
+  typedef maze_vertex_iterator vertex_iterator;
+  typedef std::size_t vertices_size_type;
+
+  // Needed for graph_traits
+  typedef void adjacency_iterator;
+  typedef void in_edge_iterator;
+  typedef void edge_iterator;
+  typedef void edges_size_type;
+
+  maze():m_x(0),m_y(0) {};
+  maze(vertices_size_type x, vertices_size_type y):m_x(x),m_y(y) {};
+
+  vertices_size_type x() const {return m_x;}
+  vertices_size_type y() const {return m_y;}
+
+  bool solve();
+
+private:
+  // Size of the x dimension
+  size_t m_x;
+  // Size of the y dimension
+  size_t m_y;
+};
+
+typedef boost::graph_traits<maze>::vertex_descriptor vertex_descriptor;
+typedef boost::graph_traits<maze>::edge_descriptor edge_descriptor;
+typedef boost::graph_traits<maze>::out_edge_iterator out_edge_iterator;
+typedef boost::graph_traits<maze>::degree_size_type degree_size_type;
+typedef boost::graph_traits<maze>::vertices_size_type vertices_size_type;
+typedef boost::graph_traits<maze>::vertex_iterator vertex_iterator;
+
+
+// Tag values passed to an iterator constructor to specify whether it should
+// be created at the start or the end of its range.
+struct iterator_position {};
+struct iterator_start:virtual public iterator_position {};
+struct iterator_end:virtual public iterator_position {};
+
+// Iterator over adjacent vertices in a grid
+class outgoing_edge_iterator:public boost::iterator_adaptor <
+  outgoing_edge_iterator,
+  boost::counting_iterator<std::size_t>,
+  edge_descriptor,
+  boost::use_default,
+  edge_descriptor >
+{
+public:
+  outgoing_edge_iterator():
+    outgoing_edge_iterator::iterator_adaptor_(4),
+    m_maze(NULL),m_u(ordered_pair()) {};
+  explicit outgoing_edge_iterator(const maze& m,
+                                  vertex_descriptor u,
+                                  iterator_start):
+    outgoing_edge_iterator::iterator_adaptor_(0),
+    m_maze(&m),m_u(u) {
+      find_next_valid_offset();
+    };
+  explicit outgoing_edge_iterator(const maze& m,
+                                  vertex_descriptor u,
+                                  iterator_end):
+    outgoing_edge_iterator::iterator_adaptor_(4),
+    m_maze(&m),m_u(u) {};
+
+private:
+  friend class boost::iterator_core_access;
+
+  void increment() {
+    this->base_reference()++;
+    find_next_valid_offset();
+  }
+
+  edge_descriptor dereference() const {
+    return edge_descriptor(m_u, m_u + current_offset());
+  }
+
+  void find_next_valid_offset() {
+    while (off_grid() && *this->base_reference() < 4)
+      this->base_reference()++;
+  }
+
+  ordered_pair current_offset () const {
+    static const ordered_pair offset[] = {
+      ordered_pair(0, -1),
+      ordered_pair(1, 0),
+      ordered_pair(0, 1),
+      ordered_pair(-1, 0)};
+    return offset[*this->base_reference()];
+  }
+
+  bool off_grid() {
+    ordered_pair v = m_u + current_offset();
+    if (v.first < 0 || v.first == m_maze->x())
+      return true;
+    if (v.second < 0 || v.second == m_maze->y())
+      return true;
+    return false;
+  }
+
+  // A maze containing vertices to be iterated
+  const maze *m_maze;
+  // Vertex whose out edges are iterated
+  vertex_descriptor m_u;
+};
+
+// IncidenceGraph
+vertex_descriptor source(edge_descriptor e, const maze&) {
+  // The first vertex in the edge pair is the source.
+  return e.first;
+}
+
+vertex_descriptor target(edge_descriptor e, const maze& m) {
+ // The second vertex in the edge pair is the target.
+ return e.second;
+}
+
+std::pair<out_edge_iterator, out_edge_iterator>
+out_edges(vertex_descriptor u, const maze& m) {
+  return std::pair<out_edge_iterator, out_edge_iterator>(
+    out_edge_iterator(m, u, iterator_start()),
+    out_edge_iterator(m, u, iterator_end()) );
+}
+
+degree_size_type out_degree(vertex_descriptor u, const maze& m) {
+  degree_size_type d = 4;
+
+  if (u.first == 0 || u.first == m.x())
+    d -= 1;
+  if (u.second == 0 || u.second == m.y())
+    d -= 1;
+  return d;
+}
+
+// VertexListGraph
+vertex_descriptor vertex(vertices_size_type i, const maze& m) {
+  // Return a vertex given a vertex index.
+  return vertex_descriptor(i % m.x(), i/m.y());
+}
+
+vertices_size_type num_vertices(const maze& m) {
+  return m.x() * m.y();
+}
+
+
+// Iterator over all the vertices in the maze grid.
+class maze_vertex_iterator:public boost::iterator_adaptor <
+  maze_vertex_iterator,
+  boost::counting_iterator<vertices_size_type>,
+  vertex_descriptor,
+  boost::use_default,
+  vertex_descriptor >
+{
+public:
+  maze_vertex_iterator():
+    maze_vertex_iterator::iterator_adaptor_(0), m_maze(NULL) {};
+  explicit maze_vertex_iterator(const maze& m,
+                                iterator_start):
+    maze_vertex_iterator::iterator_adaptor_(0),m_maze(&m) {};
+  explicit maze_vertex_iterator(const maze& m,
+                                iterator_end):
+    maze_vertex_iterator::iterator_adaptor_(num_vertices(m)),m_maze(&m) {};
+
+private:
+  friend class boost::iterator_core_access;
+
+  vertex_descriptor dereference() const {
+    return vertex(*this->base_reference(), *m_maze);
+  }
+
+  const maze *m_maze;
+};
+
+std::pair<vertex_iterator, vertex_iterator> vertices(const maze& m) {
+  return std::pair<vertex_iterator, vertex_iterator>(
+    vertex_iterator(m, iterator_start()),
+    vertex_iterator(m, iterator_end()) );
+}
+
+
+
+// Distance traveled in the maze
+typedef double distance;
+
+// Vertex-to-vertex mapping used by the predecessor map
+typedef std::map<vertex_descriptor, vertex_descriptor> pred_map;
+// Vetex-to-distance mapping used by the distance map
+typedef std::map<vertex_descriptor, distance> dist_map;
+
+
+// Readable Property Map for edge weights.
+struct edge_weight_pmap {
+  typedef distance value_type;
+  typedef value_type reference;
+  typedef edge_descriptor key_type;
+  typedef boost::readable_property_map_tag category;
+};
+
+typedef boost::property_traits<edge_weight_pmap>::value_type
+        edge_weight_pmap_value;
+typedef boost::property_traits<edge_weight_pmap>::key_type
+        edge_weight_pmap_key;
+
+// All edges are one unit long.
+edge_weight_pmap_value get(edge_weight_pmap, edge_weight_pmap_key) {
+  return 1;
+}
+
+// Print edges as (x1, y1) -> (x2, y2).
+std::ostream& operator<<(std::ostream& output, const edge_descriptor& e) {
+  output << e.first << " -> " << e.second;
+  return output;
+}
+
+
+// Readable Property Map for vertex indices.
+class vertex_index_pmap {
+public:
+  typedef vertices_size_type value_type;
+  typedef value_type reference;
+  typedef vertex_descriptor key_type;
+  typedef boost::readable_property_map_tag category;
+
+  vertex_index_pmap():m_maze(NULL) {};
+  vertex_index_pmap(const maze& m):m_maze(&m) {};
+
+  value_type operator[](key_type u) const {
+    return u.first + m_maze->x()*u.second;
+  }
+
+private:
+  const maze* m_maze;
+};
+
+typedef boost::property_traits<vertex_index_pmap>::value_type
+        vertex_index_pmap_value;
+typedef boost::property_traits<vertex_index_pmap>::key_type
+        vertex_index_pmap_key;
+
+vertex_index_pmap_value get(vertex_index_pmap pmap, vertex_index_pmap_key u) {
+  return pmap[u];
+}
+
+
+// Euclidean heuristic for a grid
+//
+// This calculates the Euclidean distance between a vertex and a goal
+// vertex.
+class euclidean_heuristic:public boost::astar_heuristic<maze, distance> {
+public:
+  euclidean_heuristic(vertex_descriptor goal):m_goal(goal) {};
+
+  distance operator()(vertex_descriptor v) {
+    return sqrt(pow(m_goal.first - v.first, 2) +
+                pow(m_goal.second - v.second, 2));
+  }
+
+private:
+  vertex_descriptor m_goal;
+};
+
+
+// Exception thrown when the goal is found
+struct found_goal {};
+
+// Visitor that terminates when we find the goal
+struct astar_goal_visitor:public boost::default_astar_visitor {
+  astar_goal_visitor(vertex_descriptor goal):m_goal(goal) {};
+
+  // Need const otherwise we get no matching function error at:
+  // /opt/local/include/boost/graph/astar_search.hpp:141
+  void examine_vertex(vertex_descriptor u, const maze&) {
+    if (u == m_goal)
+      throw found_goal();
+  }
+
+private:
+  vertex_descriptor m_goal;
+};
+
+
+bool maze::solve() {
+  edge_weight_pmap weight;
+  pred_map predecessor;
+  boost::associative_property_map<pred_map> pred_pmap(predecessor);
+  dist_map distance;
+  boost::associative_property_map<dist_map> dist_pmap(distance);
+
+  ordered_pair source = vertex(0, *this);
+  ordered_pair goal = vertex(num_vertices(*this)-1, *this);
+  vertex_index_pmap index(*this);
+  euclidean_heuristic heuristic(goal);
+  astar_goal_visitor visitor(goal);
+
+  std::cout << "Source " << source << std::endl;
+  std::cout << "Goal " << goal << std::endl;
+  std::cout << std::endl;
+
+  std::cout << "Vertex <-> Index mapping" << std::endl;
+  for (vertices_size_type i=0; i < num_vertices(*this); i++) {
+    vertex_descriptor u = vertex(i, *this);
+    std::cout << i << "<->" << u << "<->" << get(index, u) << std::endl;
+  }
+  std::cout << std::endl;
+
+  out_edge_iterator ei, ei_end;
+  std::cout << "Edges from " << source << std::endl;
+  for (tie(ei, ei_end) = out_edges(source, *this); ei != ei_end; ei++) {
+    std::cout << *ei << " [" << get(weight, *ei) << "]" << std::endl;
+  }
+  vertex_descriptor u = vertex_descriptor(1, 1);
+  std::cout << "Edges from " << u << std::endl;
+  for (tie(ei, ei_end) = out_edges(u, *this); ei != ei_end; ei++) {
+    std::cout << *ei << " [" << get(weight, *ei) << "]" << std::endl;
+  }
+  std::cout << std::endl;
+
+  try {
+    astar_search(*this,
+                 source,
+                 heuristic,
+                 boost::vertex_index_map(index).
+                 weight_map(weight).
+                 predecessor_map(pred_pmap).
+                 distance_map(dist_pmap).
+                 visitor(visitor) );
+  } catch(found_goal fg) {
+    std::cout << "Found goal " << goal << std::endl;
+  }
+
+  std::cout << "Predecessor and distance maps" << std::endl;
+  vertex_iterator vi, vi_end;
+  for(tie(vi, vi_end) = vertices(*this); vi != vi_end; vi++) {
+    vertex_descriptor u = *vi;
+    std::cout << u << ": "
+              << "Predecessor " << predecessor[u]
+              << ", Distance " << distance[u] << std::endl;
+  }
+
+  return true;
+}
+
+
+int main (int argc, char const *argv[])
+{
+  vertices_size_type x = 3;
+  vertices_size_type y = 3;
+
+  if (argc == 3) {
+    x = atoi(argv[1]);
+    y = atoi(argv[2]);
+  }
+
+  maze m(x, y);
+  m.solve();
+  std::cout << m << std::endl;
   return 0;
 }
