@@ -370,6 +370,11 @@ vertex_index_pmap_value get(vertex_index_pmap pmap, vertex_index_pmap_key u) {
   return pmap[u];
 }
 
+vertex_index_pmap get(boost::vertex_index_t, const maze& m) {
+  return vertex_index_pmap(m);
+}
+
+
 // Euclidean heuristic for a grid
 //
 // This calculates the Euclidean distance between a vertex and a goal
@@ -417,7 +422,7 @@ bool maze::solve() {
   // upper-right-hand corner (x-1, y-1).
   ordered_pair source = vertex(0, *this);
   ordered_pair goal = vertex(num_vertices(*this)-1, *this);
-  vertex_index_pmap index(*this);
+  vertex_index_pmap index = get(boost::vertex_index, *this);
   euclidean_heuristic heuristic(goal);
   astar_goal_visitor visitor(goal);
 
