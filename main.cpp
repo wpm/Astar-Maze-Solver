@@ -1,5 +1,6 @@
 #include <boost/graph/astar_search.hpp>
 #include <boost/iterator/counting_iterator.hpp>
+#include <ctime>
 #include <iostream>
 #include <map>
 #include <set>
@@ -79,14 +80,45 @@ public:
   vertices_size_type x() const {return m_x;}
   vertices_size_type y() const {return m_y;}
 
+  void add_barrier(vertex_descriptor u) {
+    if (!has_barrier(u))
+      m_path.clear();
+    m_barriers.insert(u);
+  };
+  void remove_barrier(vertex_descriptor u) {
+    if (has_barrier(u))
+      m_path.clear();
+    m_barriers.erase(u);
+  }
+  bool has_barrier(vertex_descriptor u) const {
+    return m_barriers.find(u) != m_barriers.end();
+  }
+
   bool solve();
   bool solved() const {return !m_path.empty();}
 
+  // Return the next vertex in the specified direction.  Return u if u is at
+  // the edge of the grid.
+  vertex_descriptor next(vertex_descriptor u, std::size_t direction) const {
+    vertex_descriptor v = u;
+    if (direction == 0) {
+      if (u.first != m_x)
+        v += ordered_pair(1, 0);
+    }
+    else {
+      if (u.second != m_x)
+        v += ordered_pair(0, 1);
+    }
+    return v;
+  }
+
 private:
   // Size of the x dimension
-  size_t m_x;
+  std::size_t m_x;
   // Size of the y dimension
-  size_t m_y;
+  std::size_t m_y;
+  // The set of barriers in the maze
+  vertex_set m_barriers;
   // The set of vertices on a path through the maze
   vertex_set m_path;
   // The length of the solution path
@@ -409,6 +441,8 @@ std::ostream& operator<<(std::ostream& output, const maze& m) {
       u = vertex_descriptor(x, y);
       if (m.m_path.find(u) != m.m_path.end())
         output << "*";
+      else if (m.has_barrier(u))
+        output << "#";
       else
         output << ".";
       // Put a space after each character except at the right-hand side.
@@ -425,6 +459,43 @@ std::ostream& operator<<(std::ostream& output, const maze& m) {
 }
 
 
+
+maze random_maze(vertices_size_type x, vertices_size_type y) {
+  maze m(x, y);
+  // About one third of the maze should be barriers.
+  vertices_size_type n = num_vertices(m);
+  vertex_descriptor source = vertex(0, m);
+  vertex_descriptor goal = vertex(n - 1, m);
+  int barriers = n/3;
+  while (barriers > 0) {
+    // Choose horizontal or vertical direction.
+    std::size_t direction = std::rand() % 2;
+    // Wall should be about one quarter of the maze size in this direction.
+    vertices_size_type length = (direction == 0 ? m.x():m.y())/4;
+    if (length == 0)
+      length = 1;
+    // Create the wall while decrementing the total barrier count.
+    vertex_descriptor u = vertex(std::rand() % n, m);
+    while (length) {
+      // Start and goal spaces should never be barriers.
+      if (u != source && u != goal) {
+        m.add_barrier(u);
+        barriers--;
+        length--;
+      }
+      vertex_descriptor v = m.next(u, direction);
+      // Stop creating this wall if we reached the maze's edge.
+      if (u == v)
+        break;
+      u = v;
+    }
+  }
+  return m;
+}
+
+
+
+
 int main (int argc, char const *argv[]) {
   vertices_size_type x = 3;
   vertices_size_type y = 3;
@@ -434,7 +505,8 @@ int main (int argc, char const *argv[]) {
     y = atoi(argv[2]);
   }
 
-  maze m(x, y);
+  std::srand(std::time(0));
+  maze m = random_maze(x, y);
 
   vertex_index_pmap index(m);
   std::cout << "Vertex <-> Index mapping" << std::endl;
