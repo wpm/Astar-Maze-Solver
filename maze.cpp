@@ -25,8 +25,6 @@ typedef std::size_t distance;
 typedef boost::grid_graph<GRID_RANK> grid;
 typedef boost::graph_traits<grid>::vertex_descriptor vertex_descriptor;
 typedef boost::graph_traits<grid>::vertices_size_type vertices_size_type;
-typedef boost::graph_traits<grid>::edge_descriptor edge_descriptor;
-typedef boost::graph_traits<grid>::vertices_size_type vertices_size_type;
 
 typedef std::set<vertex_descriptor> vertex_set;
 typedef boost::vertex_subset_complement_filter<grid, vertex_set>::type
@@ -114,29 +112,6 @@ private:
 };
 
 
-// Readable Property Map for edge weights.
-struct edge_weight_pmap {
-  typedef distance value_type;
-  typedef value_type reference;
-  typedef edge_descriptor key_type;
-  typedef boost::readable_property_map_tag category;
-};
-
-typedef boost::property_traits<edge_weight_pmap>::value_type
-        edge_weight_pmap_value;
-typedef boost::property_traits<edge_weight_pmap>::key_type
-        edge_weight_pmap_key;
-
-// All edges are one unit long.
-edge_weight_pmap_value get(edge_weight_pmap, edge_weight_pmap_key) {
-  return 1;
-}
-
-edge_weight_pmap get(boost::edge_weight_t, const grid&) {
-  return edge_weight_pmap();
-}
-
-
 // Readable Property Map for vertex indices.
 class vertex_index_pmap {
 public:
@@ -210,7 +185,8 @@ private:
 
 // Solve the maze using A-star search.  Return true if a solution was found.
 bool maze::solve() {
-  edge_weight_pmap weight = get(boost::edge_weight, m_grid);
+  typedef boost::static_property_map<distance> edge_weight_pmap;
+  edge_weight_pmap weight = edge_weight_pmap(1);
   vertex_index_pmap index = get(boost::vertex_index, m_grid);
   // The predecessor map is a vertex-to-vertex mapping.
   typedef std::map<vertex_descriptor, vertex_descriptor> pred_map;
