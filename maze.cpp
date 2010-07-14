@@ -7,6 +7,7 @@
 #include <boost/graph/astar_search.hpp>
 #include <boost/graph/filtered_graph.hpp>
 #include <boost/graph/grid_graph.hpp>
+#include <boost/lexical_cast.hpp>
 #include <ctime>
 #include <iostream>
 #include <map>
@@ -77,7 +78,6 @@ public:
   vertex_descriptor goal() const {
     return vertex(num_vertices(m_grid)-1, m_grid);
   }
-
 
   bool solve();
   bool solved() const {return !m_solution.empty();}
@@ -286,7 +286,7 @@ std::ostream& operator<<(std::ostream& output, const maze& m) {
 }
 
 // Generate a maze with a random assignment of barriers.
-maze random_maze(vertices_size_type x, vertices_size_type y) {
+maze random_maze(std::size_t x, std::size_t y) {
   maze m(x, y);
   vertices_size_type n = num_vertices(m.m_grid);
   vertex_descriptor s = m.source();
@@ -323,12 +323,12 @@ maze random_maze(vertices_size_type x, vertices_size_type y) {
 int main (int argc, char const *argv[]) {
   // The default maze size is 20x10.  A different size may be specified on
   // the command line.
-  vertices_size_type x = 20;
-  vertices_size_type y = 10;
+  std::size_t x = 20;
+  std::size_t y = 10;
 
   if (argc == 3) {
-    x = atoi(argv[1]);
-    y = atoi(argv[2]);
+    x = boost::lexical_cast<std::size_t>(argv[1]);
+    y = boost::lexical_cast<std::size_t>(argv[2]);
   }
 
   std::srand(std::time(0));
