@@ -6,12 +6,14 @@ BOOST_PATH=/src/boost-trunk
 
 FILES=LICENSE_1_0.txt Makefile README.md maze.cpp
 
+CXX=g++
+
 TARGET = astar-maze
 OBJECTS = maze.o
 CXXFLAGS = -g -I$(BOOST_PATH) -Wall -Werror -O3
 
 $(TARGET): $(OBJECTS)
-	g++ $(OBJECTS) -o $@
+	$(CXX) $(OBJECTS) -o $@
 
 .PHONY : dist
 dist: $(FILES)
