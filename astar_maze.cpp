@@ -31,9 +31,9 @@
 #include <boost/random/uniform_int.hpp>
 #include <boost/random/variate_generator.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 #include <ctime>
 #include <iostream>
-#include <set>
 
 boost::mt19937 random_generator;
 
@@ -45,10 +45,19 @@ typedef boost::grid_graph<GRID_RANK> grid;
 typedef boost::graph_traits<grid>::vertex_descriptor vertex_descriptor;
 typedef boost::graph_traits<grid>::vertices_size_type vertices_size_type;
 
-typedef std::set<vertex_descriptor> vertex_set;
+// A hash function for vertices.
+struct vertex_hash:std::unary_function<vertex_descriptor, std::size_t> {
+  std::size_t operator()(vertex_descriptor const& u) const {
+    std::size_t seed = 0;
+    boost::hash_combine(seed, u[0]);
+    boost::hash_combine(seed, u[1]);
+    return seed;
+  }
+};
+
+typedef boost::unordered_set<vertex_descriptor, vertex_hash> vertex_set;
 typedef boost::vertex_subset_complement_filter<grid, vertex_set>::type
         filtered_grid;
-
 
 // A searchable maze
 //
@@ -196,16 +205,6 @@ struct astar_goal_visitor:public boost::default_astar_visitor {
 
 private:
   vertex_descriptor m_goal;
-};
-
-// A boost::unordered_map hash function for vertices.
-struct vertex_hash:std::unary_function<vertex_descriptor, std::size_t> {
-  std::size_t operator()(vertex_descriptor const& u) const {
-    std::size_t seed = 0;
-    boost::hash_combine(seed, u[0]);
-    boost::hash_combine(seed, u[1]);
-    return seed;
-  }
 };
 
 // Solve the maze using A-star search.  Return true if a solution was found.
