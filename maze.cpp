@@ -4,6 +4,25 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
+
+// This program uses the A-star search algorithm in the Boost Graph Library to
+// solve a maze.  It is an example of how to apply Boost Graph Library
+// algorithms to implicit graphs.
+//
+// This program generates a random maze and then tries to find the shortest
+// path from the lower left-hand corner to the upper right-hand corner.  Mazes
+// are represented by two-dimensional grids where a cell in the grid may
+// contain a barrier.  You may move up, down, right, or left to any adjacent
+// cell that does not contain a barrier.
+//
+// Once a maze solution has been attempted, the maze is printed.  If a
+// solution was found it will be shown in the maze printout and its length
+// will be returned.  Note that not all mazes have solutions.
+//
+// The default maze size is 20x10, though different dimensions may be
+// specified on the command line.
+
+
 #include <boost/graph/astar_search.hpp>
 #include <boost/graph/filtered_graph.hpp>
 #include <boost/graph/grid_graph.hpp>
@@ -124,7 +143,6 @@ public:
   vertex_index_pmap(const grid& g):m_grid(&g) {};
 
   value_type operator[](key_type u) const {
-    // This is backwards from the documentation.
     return get(boost::vertex_index, *m_grid, u);
   }
 
@@ -171,8 +189,6 @@ struct found_goal {};
 struct astar_goal_visitor:public boost::default_astar_visitor {
   astar_goal_visitor(vertex_descriptor goal):m_goal(goal) {};
 
-  // Need const otherwise we get no matching function error at:
-  // /opt/local/include/boost/graph/astar_search.hpp:141
   void examine_vertex(vertex_descriptor u, const filtered_grid&) {
     if (u == m_goal)
       throw found_goal();
