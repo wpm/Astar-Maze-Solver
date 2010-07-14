@@ -8,11 +8,15 @@
 #include <boost/graph/filtered_graph.hpp>
 #include <boost/graph/grid_graph.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_int.hpp>
+#include <boost/random/variate_generator.hpp>
 #include <ctime>
 #include <iostream>
 #include <map>
 #include <set>
 
+boost::mt19937 random_generator;
 
 // Distance traveled in the maze
 typedef std::size_t distance;
@@ -285,6 +289,14 @@ std::ostream& operator<<(std::ostream& output, const maze& m) {
   return output;
 }
 
+// Return a random integer in the interval [0, n].
+std::size_t random_int(std::size_t n) {
+  boost::uniform_int<> dist(0, n);
+  boost::variate_generator<boost::mt19937&, boost::uniform_int<> >
+  generate(random_generator, dist);
+  return generate();
+}
+
 // Generate a maze with a random assignment of barriers.
 maze random_maze(std::size_t x, std::size_t y) {
   maze m(x, y);
@@ -295,13 +307,13 @@ maze random_maze(std::size_t x, std::size_t y) {
   int barriers = n/3;
   while (barriers > 0) {
     // Choose horizontal or vertical direction.
-    std::size_t direction = std::rand() % 2;
+    std::size_t direction = random_int(1);
     // Walls should be about one quarter of the maze size in this direction.
     vertices_size_type wall = m.length(direction)/4;
     if (wall == 0)
       wall = 1;
     // Create the wall while decrementing the total barrier count.
-    vertex_descriptor u = vertex(std::rand() % n, m.m_grid);
+    vertex_descriptor u = vertex(random_int(n-1), m.m_grid);
     while (wall) {
       // Start and goal spaces should never be barriers.
       if (u != s && u != g) {
@@ -331,7 +343,7 @@ int main (int argc, char const *argv[]) {
     y = boost::lexical_cast<std::size_t>(argv[2]);
   }
 
-  std::srand(std::time(0));
+  random_generator.seed(std::time(0));
   maze m = random_maze(x, y);
 
   if (m.solve())
