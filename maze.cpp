@@ -14,7 +14,7 @@
 
 
 // Distance traveled in the maze
-typedef double distance;
+typedef std::size_t distance;
 
 #define GRID_RANK 2
 typedef boost::grid_graph<GRID_RANK> grid;
@@ -172,12 +172,12 @@ vertex_index_pmap get(boost::vertex_index_t, const grid& g) {
 // This calculates the Euclidean distance between a vertex and a goal
 // vertex.
 class euclidean_heuristic:
-      public boost::astar_heuristic<filtered_grid, distance>
+      public boost::astar_heuristic<filtered_grid, double>
 {
 public:
   euclidean_heuristic(vertex_descriptor goal):m_goal(goal) {};
 
-  distance operator()(vertex_descriptor v) {
+  double operator()(vertex_descriptor v) {
     return sqrt(pow(m_goal[0] - v[0], 2) + pow(m_goal[1] - v[1], 2));
   }
 
