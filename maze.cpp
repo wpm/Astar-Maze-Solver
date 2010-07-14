@@ -59,22 +59,30 @@ public:
   // solution is discarded.
   void add_barrier(vertex_descriptor u) {
     if (!has_barrier(u))
-      m_path.clear();
+      m_solution.clear();
     m_barriers.insert(u);
   };
   void remove_barrier(vertex_descriptor u) {
     if (has_barrier(u))
-      m_path.clear();
+      m_solution.clear();
     m_barriers.erase(u);
   }
   bool has_barrier(vertex_descriptor u) const {
     return m_barriers.find(u) != m_barriers.end();
   }
 
+  // Try to find a path from the lower-left-hand corner source (0,0) to the
+  // upper-right-hand corner goal (x-1, y-1).
+  vertex_descriptor source() const {return vertex(0, m_grid);}
+  vertex_descriptor goal() const {
+    return vertex(num_vertices(m_grid)-1, m_grid);
+  }
+
+
   bool solve();
-  bool solved() const {return !m_path.empty();}
+  bool solved() const {return !m_solution.empty();}
   bool solution_contains(vertex_descriptor u) const {
-    return m_path.find(u) != m_path.end();
+    return m_solution.find(u) != m_solution.end();
   }
 
 private:
@@ -96,9 +104,9 @@ private:
   // The barriers in the maze
   vertex_set m_barriers;
   // The vertices on a solution path through the maze
-  vertex_set m_path;
+  vertex_set m_solution;
   // The length of the solution path
-  distance m_path_length;
+  distance m_solution_length;
 };
 
 
@@ -119,14 +127,6 @@ typedef boost::property_traits<edge_weight_pmap>::key_type
 edge_weight_pmap_value get(edge_weight_pmap, edge_weight_pmap_key) {
   return 1;
 }
-
-// namespace boost {
-//   template<>
-//   struct property_map<filtered_grid, edge_weight_t> {
-//     typedef edge_weight_pmap type;
-//     typedef type const_type;
-//   };
-// }
 
 edge_weight_pmap get(boost::edge_weight_t, const grid&) {
   return edge_weight_pmap();
@@ -217,16 +217,14 @@ bool maze::solve() {
   dist_map distance;
   boost::associative_property_map<dist_map> dist_pmap(distance);
 
-  // Try to find a path from the lower-left-hand corner (0,0) to the
-  // upper-right-hand corner (x-1, y-1).
-  vertex_descriptor source = vertex(0, m_grid);
-  vertex_descriptor goal = vertex(num_vertices(m_grid)-1, m_grid);
-  euclidean_heuristic heuristic(goal);
-  astar_goal_visitor visitor(goal);
+  vertex_descriptor s = source();
+  vertex_descriptor g = goal();
+  euclidean_heuristic heuristic(g);
+  astar_goal_visitor visitor(g);
 
   try {
     astar_search(m_barrier_grid,
-                 source,
+                 source(),
                  heuristic,
                  boost::weight_map(weight).
                  vertex_index_map(index).
@@ -236,10 +234,10 @@ bool maze::solve() {
   } catch(found_goal fg) {
     // Walk backwards from the goal through the predecessor chain adding
     // vertices to the solution path.
-    for (vertex_descriptor u = goal; u != source; u = predecessor[u])
-      m_path.insert(u);
-    m_path.insert(source);
-    m_path_length = distance[goal];
+    for (vertex_descriptor u = g; u != s; u = predecessor[u])
+      m_solution.insert(u);
+    m_solution.insert(s);
+    m_solution_length = distance[g];
     return true;
   }
 
@@ -283,7 +281,7 @@ std::ostream& operator<<(std::ostream& output, const maze& m) {
   for (vertices_size_type i = 0; i < m.length(0)+2; i++)
     output << BARRIER;
   if (m.solved())
-    output << std::endl << "Solution length " << m.m_path_length;
+    output << std::endl << "Solution length " << m.m_solution_length;
   return output;
 }
 
@@ -291,8 +289,8 @@ std::ostream& operator<<(std::ostream& output, const maze& m) {
 maze random_maze(vertices_size_type x, vertices_size_type y) {
   maze m(x, y);
   vertices_size_type n = num_vertices(m.m_grid);
-  vertex_descriptor source = vertex(0, m.m_grid);
-  vertex_descriptor goal = vertex(n - 1, m.m_grid);
+  vertex_descriptor s = m.source();
+  vertex_descriptor g = m.goal();
   // About one third of the maze should be barriers.
   int barriers = n/3;
   while (barriers > 0) {
@@ -306,7 +304,7 @@ maze random_maze(vertices_size_type x, vertices_size_type y) {
     vertex_descriptor u = vertex(std::rand() % n, m.m_grid);
     while (wall) {
       // Start and goal spaces should never be barriers.
-      if (u != source && u != goal) {
+      if (u != s && u != g) {
         m.m_barriers.insert(u);
         barriers--;
         wall--;
