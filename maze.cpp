@@ -30,9 +30,9 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
 #include <boost/random/variate_generator.hpp>
+#include <boost/unordered_map.hpp>
 #include <ctime>
 #include <iostream>
-#include <map>
 #include <set>
 
 boost::mt19937 random_generator;
@@ -198,6 +198,15 @@ private:
   vertex_descriptor m_goal;
 };
 
+// A boost::unordered_map hash function for vertices.
+struct vertex_hash:std::unary_function<vertex_descriptor, std::size_t> {
+  std::size_t operator()(vertex_descriptor const& u) const {
+    std::size_t seed = 0;
+    boost::hash_combine(seed, u[0]);
+    boost::hash_combine(seed, u[1]);
+    return seed;
+  }
+};
 
 // Solve the maze using A-star search.  Return true if a solution was found.
 bool maze::solve() {
@@ -205,11 +214,16 @@ bool maze::solve() {
   edge_weight_pmap weight = edge_weight_pmap(1);
   vertex_index_pmap index = get(boost::vertex_index, m_grid);
   // The predecessor map is a vertex-to-vertex mapping.
-  typedef std::map<vertex_descriptor, vertex_descriptor> pred_map;
+  
+  typedef boost::unordered_map<vertex_descriptor,
+                               vertex_descriptor,
+                               vertex_hash> pred_map;
   pred_map predecessor;
   boost::associative_property_map<pred_map> pred_pmap(predecessor);
   // The distance map is a vertex-to-distance mapping.
-  typedef std::map<vertex_descriptor, distance> dist_map;
+  typedef boost::unordered_map<vertex_descriptor,
+                               distance,
+                               vertex_hash> dist_map;
   dist_map distance;
   boost::associative_property_map<dist_map> dist_pmap(distance);
 
