@@ -214,7 +214,6 @@ bool maze::solve() {
   edge_weight_pmap weight = edge_weight_pmap(1);
   vertex_index_pmap index = get(boost::vertex_index, m_grid);
   // The predecessor map is a vertex-to-vertex mapping.
-  
   typedef boost::unordered_map<vertex_descriptor,
                                vertex_descriptor,
                                vertex_hash> pred_map;

@@ -9,7 +9,7 @@ FILES=LICENSE_1_0.txt Makefile README.md maze.cpp
 CXX=g++
 
 TARGET = astar-maze
-OBJECTS = maze.o
+OBJECTS = astar_maze.o
 CXXFLAGS = -g -I$(BOOST_PATH) -Wall -Werror -O3
 
 $(TARGET): $(OBJECTS)
