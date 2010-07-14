@@ -16,6 +16,18 @@
 // Distance traveled in the maze
 typedef double distance;
 
+#define GRID_RANK 2
+typedef boost::grid_graph<GRID_RANK> grid;
+typedef boost::graph_traits<grid>::vertex_descriptor vertex_descriptor;
+typedef boost::graph_traits<grid>::vertices_size_type vertices_size_type;
+typedef boost::graph_traits<grid>::edge_descriptor edge_descriptor;
+typedef boost::graph_traits<grid>::vertices_size_type vertices_size_type;
+
+typedef std::set<vertex_descriptor> vertex_set;
+typedef boost::vertex_subset_compliment_filter<grid, vertex_set>::type
+        filtered_grid;
+
+
 // A searchable maze
 //
 // The maze is grid of locations which can either be empty or contain a
@@ -25,21 +37,14 @@ typedef double distance;
 // upper-right-hand corner.  If no open path exists between these two
 // locations, the maze is unsolvable.
 //
-// The maze is implemented as an implicit graph where locations are vertices
-// and edges connect adjacent vertices that are not blocked by barriers.
+// The maze is implemented as a filtered grid graph where locations are
+// vertices.  Barrier vertices are filtered out of the graph.
+//
 // A-star search is used to find a path through the maze. Each edge has a
 // weight of one, so the total path length is equal to the number of edges
 // traversed.
 class maze {
 public:
-  typedef boost::grid_graph<2> grid;
-  typedef boost::graph_traits<grid>::vertex_descriptor vertex_descriptor;
-  typedef boost::graph_traits<grid>::vertices_size_type vertices_size_type;
-
-  typedef std::set<vertex_descriptor> vertex_set;
-  typedef boost::vertex_subset_compliment_filter<grid, vertex_set>::type
-          filtered_grid;
-
   friend std::ostream& operator<<(std::ostream&, const maze&);
   friend maze random_maze(std::size_t, std::size_t);
 
@@ -47,6 +52,7 @@ public:
   maze(std::size_t x, std::size_t y):m_grid(create_grid(x, y)),
        m_barrier_grid(create_barrier_grid()) {};
 
+  // The length of the maze along the specified dimension.
   vertices_size_type length(std::size_t d) const {return m_grid.length(d);}
 
   // If adding or removing a barrier changes the maze, any previously found
@@ -67,34 +73,33 @@ public:
 
   bool solve();
   bool solved() const {return !m_path.empty();}
+  bool solution_contains(vertex_descriptor u) const {
+    return m_path.find(u) != m_path.end();
+  }
 
 private:
   // Create the underlying rank-2 grid with the specified dimensions.
   grid create_grid(std::size_t x, std::size_t y) {
-    boost::array<std::size_t, 2> lengths = { {x, y} };
+    boost::array<std::size_t, GRID_RANK> lengths = { {x, y} };
     return grid(lengths);
   }
 
-  // Filter the vertices in the barrier set out of the underlying grid.
+  // Filter the barrier vertices out of the underlying grid.
   filtered_grid create_barrier_grid() {
     return boost::make_vertex_subset_compliment_filter(m_grid, m_barriers);
   }
-  
-  // The grid on which this maze is drawn
+
+  // The grid underlying the maze
   grid m_grid;
-  // The maze grid with barrier vertices filtered out
+  // The underlying maze grid with barrier vertices filtered out
   filtered_grid m_barrier_grid;
-  // The set of barriers in the maze
+  // The barriers in the maze
   vertex_set m_barriers;
-  // The set of vertices on a path through the maze
+  // The vertices on a solution path through the maze
   vertex_set m_path;
   // The length of the solution path
   distance m_path_length;
 };
-
-typedef boost::graph_traits<maze::grid>::vertex_descriptor vertex_descriptor;
-typedef boost::graph_traits<maze::grid>::edge_descriptor edge_descriptor;
-typedef boost::graph_traits<maze::grid>::vertices_size_type vertices_size_type;
 
 
 // Readable Property Map for edge weights.
@@ -117,13 +122,13 @@ edge_weight_pmap_value get(edge_weight_pmap, edge_weight_pmap_key) {
 
 // namespace boost {
 //   template<>
-//   struct property_map<maze::filtered_grid, edge_weight_t> {
+//   struct property_map<filtered_grid, edge_weight_t> {
 //     typedef edge_weight_pmap type;
 //     typedef type const_type;
 //   };
 // }
 
-edge_weight_pmap get(boost::edge_weight_t, const maze::grid&) {
+edge_weight_pmap get(boost::edge_weight_t, const grid&) {
   return edge_weight_pmap();
 }
 
@@ -137,7 +142,7 @@ public:
   typedef boost::readable_property_map_tag category;
 
   vertex_index_pmap():m_grid(NULL) {};
-  vertex_index_pmap(const maze::grid& g):m_grid(&g) {};
+  vertex_index_pmap(const grid& g):m_grid(&g) {};
 
   value_type operator[](key_type u) const {
     // This is backwards from the documentation.
@@ -145,7 +150,7 @@ public:
   }
 
 private:
-  const maze::grid* m_grid;
+  const grid* m_grid;
 };
 
 typedef boost::property_traits<vertex_index_pmap>::value_type
@@ -157,7 +162,7 @@ vertex_index_pmap_value get(vertex_index_pmap pmap, vertex_index_pmap_key u) {
   return pmap[u];
 }
 
-vertex_index_pmap get(boost::vertex_index_t, const maze::grid& g) {
+vertex_index_pmap get(boost::vertex_index_t, const grid& g) {
   return vertex_index_pmap(g);
 }
 
@@ -167,14 +172,13 @@ vertex_index_pmap get(boost::vertex_index_t, const maze::grid& g) {
 // This calculates the Euclidean distance between a vertex and a goal
 // vertex.
 class euclidean_heuristic:
-      public boost::astar_heuristic<maze::filtered_grid, distance>
+      public boost::astar_heuristic<filtered_grid, distance>
 {
 public:
   euclidean_heuristic(vertex_descriptor goal):m_goal(goal) {};
 
   distance operator()(vertex_descriptor v) {
-    return sqrt(pow(m_goal[0] - v[0], 2) +
-                pow(m_goal[1] - v[1], 2));
+    return sqrt(pow(m_goal[0] - v[0], 2) + pow(m_goal[1] - v[1], 2));
   }
 
 private:
@@ -190,7 +194,7 @@ struct astar_goal_visitor:public boost::default_astar_visitor {
 
   // Need const otherwise we get no matching function error at:
   // /opt/local/include/boost/graph/astar_search.hpp:141
-  void examine_vertex(vertex_descriptor u, const maze::filtered_grid&) {
+  void examine_vertex(vertex_descriptor u, const filtered_grid&) {
     if (u == m_goal)
       throw found_goal();
   }
@@ -247,22 +251,22 @@ bool maze::solve() {
 // Print the maze as an ASCII map.
 std::ostream& operator<<(std::ostream& output, const maze& m) {
   // Header
-  for (vertices_size_type i = 0; i < m.length(0) + 2; i++)
+  for (vertices_size_type i = 0; i < m.length(0)+2; i++)
     output << BARRIER;
   output << std::endl;
   // Body
-  // Enumerate rows in reverse order and columns in regular order so that
-  // (0,0) appears in the lower left-hand corner.  This requires that y be int
-  // and not the unsigned vertices_size_type because the loop exit condition
-  // is y==-1.
   for (int y = m.length(1)-1; y >= 0; y--) {
+    // Enumerate rows in reverse order and columns in regular order so that
+    // (0,0) appears in the lower left-hand corner.  This requires that y be
+    // int and not the unsigned vertices_size_type because the loop exit
+    // condition is y==-1.
     for (vertices_size_type x = 0; x < m.length(0); x++) {
       // Put a barrier on the left-hand side.
       if (x == 0)
         output << BARRIER;
       // Put the character representing this point in the maze grid.
       vertex_descriptor u = {x, y};
-      if (m.m_path.find(u) != m.m_path.end())
+      if (m.solution_contains(u))
         output << ".";
       else if (m.has_barrier(u))
         output << BARRIER;
@@ -276,7 +280,7 @@ std::ostream& operator<<(std::ostream& output, const maze& m) {
     output << std::endl;
   }
   // Footer
-  for (vertices_size_type i = 0; i < m.length(0) + 2; i++)
+  for (vertices_size_type i = 0; i < m.length(0)+2; i++)
     output << BARRIER;
   if (m.solved())
     output << std::endl << "Solution length " << m.m_path_length;
