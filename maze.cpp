@@ -29,7 +29,7 @@ typedef boost::graph_traits<grid>::edge_descriptor edge_descriptor;
 typedef boost::graph_traits<grid>::vertices_size_type vertices_size_type;
 
 typedef std::set<vertex_descriptor> vertex_set;
-typedef boost::vertex_subset_compliment_filter<grid, vertex_set>::type
+typedef boost::vertex_subset_complement_filter<grid, vertex_set>::type
         filtered_grid;
 
 
@@ -98,7 +98,7 @@ private:
 
   // Filter the barrier vertices out of the underlying grid.
   filtered_grid create_barrier_grid() {
-    return boost::make_vertex_subset_compliment_filter(m_grid, m_barriers);
+    return boost::make_vertex_subset_complement_filter(m_grid, m_barriers);
   }
 
   // The grid underlying the maze
