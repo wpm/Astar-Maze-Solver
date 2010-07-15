@@ -196,9 +196,7 @@ bool maze::solve() {
   astar_goal_visitor visitor(g);
 
   try {
-    astar_search(m_barrier_grid,
-                 source(),
-                 heuristic,
+    astar_search(m_barrier_grid, s, heuristic,
                  boost::weight_map(weight).
                  predecessor_map(pred_pmap).
                  distance_map(dist_pmap).
