@@ -140,39 +140,6 @@ private:
 };
 
 
-// Readable Property Map for vertex indices.
-class vertex_index_pmap {
-public:
-  typedef vertices_size_type value_type;
-  typedef value_type reference;
-  typedef vertex_descriptor key_type;
-  typedef boost::readable_property_map_tag category;
-
-  vertex_index_pmap():m_grid(NULL) {};
-  vertex_index_pmap(const grid& g):m_grid(&g) {};
-
-  value_type operator[](key_type u) const {
-    return get(boost::vertex_index, *m_grid, u);
-  }
-
-private:
-  const grid* m_grid;
-};
-
-typedef boost::property_traits<vertex_index_pmap>::value_type
-        vertex_index_pmap_value;
-typedef boost::property_traits<vertex_index_pmap>::key_type
-        vertex_index_pmap_key;
-
-vertex_index_pmap_value get(vertex_index_pmap pmap, vertex_index_pmap_key u) {
-  return pmap[u];
-}
-
-vertex_index_pmap get(boost::vertex_index_t, const grid& g) {
-  return vertex_index_pmap(g);
-}
-
-
 // Euclidean heuristic for a grid
 //
 // This calculates the Euclidean distance between a vertex and a goal
@@ -209,9 +176,7 @@ private:
 
 // Solve the maze using A-star search.  Return true if a solution was found.
 bool maze::solve() {
-  typedef boost::static_property_map<distance> edge_weight_pmap;
-  edge_weight_pmap weight = edge_weight_pmap(1);
-  vertex_index_pmap index = get(boost::vertex_index, m_grid);
+  boost::static_property_map<distance> weight(1);
   // The predecessor map is a vertex-to-vertex mapping.
   typedef boost::unordered_map<vertex_descriptor,
                                vertex_descriptor,
@@ -235,7 +200,6 @@ bool maze::solve() {
                  source(),
                  heuristic,
                  boost::weight_map(weight).
-                 vertex_index_map(index).
                  predecessor_map(pred_pmap).
                  distance_map(dist_pmap).
                  visitor(visitor) );
