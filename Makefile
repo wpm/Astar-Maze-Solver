@@ -4,7 +4,7 @@ ARCHIVE_NAME=$(PACKAGE)-$(VERSION)
 
 BOOST_PATH=/src/boost-trunk
 
-FILES=LICENSE_1_0.txt Makefile README.md maze.cpp
+FILES=LICENSE_1_0.txt Makefile README.md astar_maze.cpp
 
 CXX=g++
 
