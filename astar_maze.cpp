@@ -86,18 +86,6 @@ public:
   // The length of the maze along the specified dimension.
   vertices_size_type length(std::size_t d) const {return m_grid.length(d);}
 
-  // If adding or removing a barrier changes the maze, any previously found
-  // solution is discarded.
-  void add_barrier(vertex_descriptor u) {
-    if (!has_barrier(u))
-      m_solution.clear();
-    m_barriers.insert(u);
-  };
-  void remove_barrier(vertex_descriptor u) {
-    if (has_barrier(u))
-      m_solution.clear();
-    m_barriers.erase(u);
-  }
   bool has_barrier(vertex_descriptor u) const {
     return m_barriers.find(u) != m_barriers.end();
   }
