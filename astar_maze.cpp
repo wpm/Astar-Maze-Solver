@@ -255,9 +255,11 @@ std::ostream& operator<<(std::ostream& output, const maze& m) {
   return output;
 }
 
-// Return a random integer in the interval [0, n].
-std::size_t random_int(std::size_t n) {
-  boost::uniform_int<> dist(0, n);
+// Return a random integer in the interval [a, b].
+std::size_t random_int(std::size_t a, std::size_t b) {
+  if (b < a)
+    b = a;
+  boost::uniform_int<> dist(a, b);
   boost::variate_generator<boost::mt19937&, boost::uniform_int<> >
   generate(random_generator, dist);
   return generate();
@@ -269,23 +271,23 @@ maze random_maze(std::size_t x, std::size_t y) {
   vertices_size_type n = num_vertices(m.m_grid);
   vertex_descriptor s = m.source();
   vertex_descriptor g = m.goal();
-  // About one third of the maze should be barriers.
-  int barriers = n/3;
+  // One quarter of the cells in the maze should be barriers.
+  int barriers = n/4;
   while (barriers > 0) {
     // Choose horizontal or vertical direction.
-    std::size_t direction = random_int(1);
-    // Walls should be about one quarter of the maze size in this direction.
-    vertices_size_type wall = m.length(direction)/4;
-    if (wall == 0)
-      wall = 1;
+    std::size_t direction = random_int(0, 1);
+    // Walls range up to one quarter the dimension length in this direction.
+    vertices_size_type wall = random_int(1, m.length(direction)/4);
     // Create the wall while decrementing the total barrier count.
-    vertex_descriptor u = vertex(random_int(n-1), m.m_grid);
+    vertex_descriptor u = vertex(random_int(0, n-1), m.m_grid);
     while (wall) {
       // Start and goal spaces should never be barriers.
       if (u != s && u != g) {
-        m.m_barriers.insert(u);
-        barriers--;
         wall--;
+        if (!m.has_barrier(u)) {
+          m.m_barriers.insert(u);
+          barriers--;
+        }
       }
       vertex_descriptor v = m.m_grid.next(u, direction);
       // Stop creating this wall if we reached the maze's edge.
