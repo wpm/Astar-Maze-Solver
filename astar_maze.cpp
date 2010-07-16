@@ -38,7 +38,7 @@
 boost::mt19937 random_generator;
 
 // Distance traveled in the maze
-typedef std::size_t distance;
+typedef double distance;
 
 #define GRID_RANK 2
 typedef boost::grid_graph<GRID_RANK> grid;
@@ -221,7 +221,7 @@ std::ostream& operator<<(std::ostream& output, const maze& m) {
       if (x == 0)
         output << BARRIER;
       // Put the character representing this point in the maze grid.
-      vertex_descriptor u = {x, y};
+      vertex_descriptor u = {{x, y}};
       if (m.solution_contains(u))
         output << ".";
       else if (m.has_barrier(u))
