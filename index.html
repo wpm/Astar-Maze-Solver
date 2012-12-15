@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Astar-maze-solver by wpm</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Astar-maze-solver</h1>
+        <p>An example of how to use A-star search in the Boost Graph Library to solve a maze.</p>
+
+        <p class="view"><a href="https://github.com/wpm/Astar-Maze-Solver">View the Project on GitHub <small>wpm/Astar-Maze-Solver</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/wpm/Astar-Maze-Solver/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/wpm/Astar-Maze-Solver/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/wpm/Astar-Maze-Solver">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>A-Star Maze Solver</h1>
+
+<p>This program uses the A-star search algorithm in the <a href="http://www.boost.org/doc/libs/1_43_0/libs/graph/doc/index.html" title="Boost Graph Library">Boost Graph Library</a> to solve a maze.  It is an example of how to apply Boost Graph Library algorithms to implicit graphs.</p>
+
+<p>The solver consists of a single program called <code>astar-maze</code>.  This program generates a random maze and tries to find the shortest path from the lower left-hand corner to the upper right-hand corner.  Mazes are represented by two-dimensional grids where a cell in the grid may contain a barrier.  You may move up, down, right, or left into any adjacent cell that does not contain a barrier.</p>
+
+<p>Once a maze solution has been attempted, the maze is printed.  If a solution was found it will be shown in the maze printout and its length will be returned.  Note that not all mazes have solutions.</p>
+
+<p>The default maze size is 20x10, though different dimensions may be specified on the command line.</p>
+
+<h1>Installation</h1>
+
+<p>You must have the Boost Graph Library version 1.44 or higher installed.  Set <code>BOOST_PATH</code> in the Makefile to point to the root of your Boost include tree.  The <code>astar-maze</code> program builds in the distribution directory and does not install anywhere else on the system.</p>
+
+<h1>Implementation</h1>
+
+<p>The maze is represented by the <code>maze</code> class.  This class has a <a href="http://www.boost.org/doc/libs/1_41_0/libs/graph/doc/grid_graph.html" title="Grid Graph">grid graph</a> member which defines the underlying grid.  All edges are assigned a weight of one.  Barriers in the maze are removed from the underlying grid using a <a href="http://www.boost.org/doc/libs/1_43_0/libs/graph/doc/filtered_graph.html" title="Filtered Graph">graph filter</a>.  The maze is searched using the <a href="http://www.boost.org/doc/libs/1_38_0/libs/graph/doc/astar_search.html" title="A* Search">A* search</a> algorithm.</p>
+
+<h1>History</h1>
+
+<ul>
+<li>
+<strong>Version 1.0.0</strong>: Initial release</li>
+</ul><h1>Copyright</h1>
+
+<p>Copyright <a href="mailto:billmcn@gmail.com">W.P. McNeill</a> 2010.</p>
+
+<p>Distributed under the Boost Software License, Version 1.0.</p>
+
+<p>See accompanying file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" title="Boost License 1.0">http://www.boost.org/LICENSE_1_0.txt</a>.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/wpm">wpm</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
